@@ -1,0 +1,77 @@
+
+span {
+  display: inline-block;
+  position: relative;
+  margin-right: 5px;
+}
+span:after {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: 0;
+  top: 0;
+  left: 0;
+  transition: 0.6s;
+  z-index: -5;
+}
+
+.CheckerText {
+  color: transparent;
+}
+
+
+.CheckerText > span:nth-child(2):after {
+  background: repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 
+      50% / 20px 20px;
+  width: 100%;
+  transition: 0.6s;
+  transition-delay: 200ms;
+  transform: rotate(-20deg);
+}
+
+.CheckerText > span:nth-child(2) {
+  color: #39393B;
+  transition-delay: 220ms;
+}
+
+.CheckerText > span:nth-child(3):after {
+  background: repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 
+      50% / 20px 20px;
+  width: 100%;
+  transition: 0.6s;
+  transition-delay: 300ms;
+  transform: rotate(-15deg);
+}
+
+.CheckerText > span:nth-child(3) {
+  color: #39393B;
+  transition-delay: 330ms;
+}
+
+.CheckerText > span:nth-child(4):after {
+  background: repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 
+      50% / 20px 20px;
+  width: 100%;
+  transition: 0.6s;
+  transition-delay: 400ms;
+  transform: rotate(-10deg);
+}
+
+.CheckerText > span:nth-child(4) {
+  color: #39393B;
+  transition-delay: 440ms;
+}
+
+.CheckerText > span:nth-child(5):after {
+  background: repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 
+      50% / 20px 20px;
+  width: 100%;
+  transition: 0.6s;
+  transition-delay: 500ms;
+  transform: rotate(-5deg);
+}
+
+.CheckerText > span:nth-child(5) {
+  color: #39393B;
+  transition-delay: 550ms;
+}
