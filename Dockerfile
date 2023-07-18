@@ -23,4 +23,4 @@ RUN pnpm run build
 EXPOSE 3000
 
 # Start the application (replace "build" with the appropriate command to start your app)
-CMD ["pnpm", "run", "start"]
+CMD ["pnpm", "run", "serve"]
