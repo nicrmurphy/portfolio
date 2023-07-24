@@ -269,8 +269,12 @@ a {
   /* max-height: 500px; */
 }
 
-.Pointer {
-  cursor: pointer;
+.Grab {
+  cursor: grab;
+}
+
+.Grabbing {
+  cursor: grabbing;
 }
 
 .PromotionText {
@@ -423,7 +427,19 @@ a {
   animation-duration: 11s;
 }
 
+.KingSquare {
+  filter: 
+    drop-shadow(4px 4px 3px rgb(0 0 0 / 0.3))
+    drop-shadow(-4px 4px 3px rgb(0 0 0 / 0.3))
+    drop-shadow(4px -4px 3px rgb(0 0 0 / 0.3))
+    drop-shadow(-4px -4px 3px rgb(0 0 0 / 0.3))
+    ;
+}
 
+.ThroneSquare {
+  filter: drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4))
+    drop-shadow(-3px -5px 2px rgb(0 0 0 / 0.4));
+}
 
 @keyframes animate {
 

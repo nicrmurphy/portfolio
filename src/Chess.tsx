@@ -297,8 +297,8 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
   const [isDraw, setIsDraw] = createSignal<boolean>(cache.isDraw ?? false)
   const [hoverFriendlyPiece, setHoverFriendlyPiece] = createSignal<boolean>(cache.hoverFriendlyPiece ?? false)
 
-  const [lightSquareFill, setLightSquareFill] = createSignal<string>('#ffd5ba')
-  const [darkSquareFill, setDarkSquareFill] = createSignal<string>('#a87156')
+  const [lightSquareFill, setLightSquareFill] = createSignal<string>('#f0d9b5')
+  const [darkSquareFill, setDarkSquareFill] = createSignal<string>('#b58863')
 
   createEffect(on(() => props.resetBoard, (shouldReset) => {
     if (shouldReset) {
@@ -689,6 +689,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
 
     if (threats.includes(enemyKingLocation)) checkSquares.push(index)
 
+    // TODO: CAN CASTLE OUT OF CHECK
     const checkCanCastleAtOffset = (castleOffset: number) => {
       const castleSquare = index + castleOffset
       if (!rookMoved()[castleSquare]) {

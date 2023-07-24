@@ -37,6 +37,16 @@ Your app is ready to be deployed!
 You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
 
 
+## Hnefatafl TODO
+### Features
+- Shield Wall
+- Move Repetitions
+- Online Multiplayer
+- Play Against Bot
+### Bugs
+- Wrong cursor on preview
+- Clicking Preview doesn't always open game
+
 # Piece Binaries 
 
 00000    0
