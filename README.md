@@ -39,10 +39,10 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 ## Hnefatafl TODO
 ### Features
-- Shield Wall
-- Move Repetitions
+- Move Repetition Rule
 - Online Multiplayer
 - Play Against Bot
+- Testing Suite for legal moves
 ### Bugs
 - Wrong cursor on preview
 - Clicking Preview doesn't always open game

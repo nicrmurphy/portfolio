@@ -179,6 +179,12 @@ a {
   margin: .5em;
 }
 
+.PlayGame {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
 .FillerButton {
   /* text-transform: uppercase; */
   border: 2px solid white;
@@ -235,6 +241,14 @@ a {
   color: white;
 }
 
+.Row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  overflow-wrap: anywhere;
+}
+
 .link {
   color: #b318f0;
 }
@@ -267,6 +281,10 @@ a {
 
 .PreviewBoard {
   /* max-height: 500px; */
+}
+
+.Default {
+  cursor: default;
 }
 
 .Grab {
