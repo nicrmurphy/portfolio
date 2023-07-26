@@ -39,7 +39,7 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 ## Hnefatafl TODO
 ### Features
-- Move Repetition Rule
+- Ability to Offer/Accept Draw
 - Online Multiplayer
 - Play Against Bot
 - Testing Suite for legal moves

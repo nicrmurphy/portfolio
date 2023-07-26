@@ -239,12 +239,16 @@ a {
   width: 8em;
   font-size: calc(10px + 2vmin);
   color: white;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .Row {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  flex-grow: 1;
 
   overflow-wrap: anywhere;
 }

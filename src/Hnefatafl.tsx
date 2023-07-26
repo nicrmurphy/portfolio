@@ -9,11 +9,42 @@ const NUM_BOARD_SQUARES = BW * BW
 
 const ORTHOGONAL_OFFSETS = [-BW, -1, 1, BW]
 
-const DEFAULT_BOARD_FEN = 'e3b5e8be16be4we4b2e3w3e3b3ew2kw2eb3e3w3e3b2e4we4be16be8b5-b'
-const EXIT_FORD_TESTING_FEN = 'e3b5e8be16be4we4b2e3w3e3b3e7b3e9b2e4w2e3be4we2we6wewe2we7ke2w-w'
-const SHIELD_WALL_TESTING_FEN = 'e3b5e8be7we8bwe8b2we3w2e3b2we3kw2eb3we4we3b2we6be2we15be7b6-w'
-const SHIELD_WALL_TESTING2_FEN = 'e3b5e8be7we8bwe8b2we3w2e3b2we3kw2eb3we8b2we9bwe9bwe3be8b5-w'
-const SHIELD_WALL_TESTING3_FEN = 'e5b3e3wbe9kbe9wbe8bwbe3w2e3be2be3w2eb2wbe3w2e3bwbe8bwbe9be4be8b5-b'
+const DEFAULT_BOARD_FEN = 'e3b5e8be16be4we4b2e3w3e3b3ew2kw2eb3e3w3e3b2e4we4be16be8b5_b'
+const EXIT_FORD_TESTING_FEN = 'e3b5e8be16be4we4b2e3w3e3b3e7b3e9b2e4w2e3be4we2we6wewe2we7ke2w_w'
+const SHIELD_WALL_TESTING_FEN = 'e3b5e8be7we8bwe8b2we3w2e3b2we3kw2eb3we4we3b2we6be2we15be7b6_w'
+const SHIELD_WALL_TESTING2_FEN = 'e3b5e8be7we8bwe8b2we3w2e3b2we3kw2eb3we8b2we9bwe9bwe3be8b5_w'
+const SHIELD_WALL_TESTING3_FEN = 'e5b3e3wbe9kbe9wbe8bwbe3w2e3be2be3w2eb2wbe3w2e3bwbe8bwbe9be4be8b5_b'
+const PERPETUAL_TESTING_FEN = 'e3bebebe7be4be7we2kebe4be5be3we5b3ew2e2web3e3w3e3b2e4we4be16be8b5_w'
+
+// e25b5e5be2we2be3be2w3e2be2bew2kw2ebe2be2w3e2be2be6be4be2b3e6beb2e8bwb_b
+// e26b4e6bewe2be4bew3e2be2bewekw2ebe2bew4e2be3be5be5beb3e5b2eb2e8bwb_b
+
+/** shield wall tests (official)
+ * e43we9wbe5ke3wbe8w_w -> i5-k5 -> e43we9we6ke3we11w_b (defender win via no moves)
+ * e43we9wbe5ke3wbe32w_w -> k3-k5 -> e43we9we6ke3we11w_b (defender win via no moves)
+ * e21we9wbe9wbe9wbe5ke3wbe8w_w -> i5-k5 -> e21we9we10we10we6ke3we11w_b (defender win via no moves)
+ * e43be9bwe5ke3bwe8b_b -> i5-k5 -> e43be9be6ke3be11b_w
+ * e20wbe9wbe8we18k_w -> i8-k8 -> e20we10we11we16k_b (defender win via no moves)
+ * e54we5ke3wbe9wbe8we11wbe9wb_w -> i4-k4 -> e54we5ke3we10we11we9we10w_b (defender win via no moves)
+ * e8b2e10kbe9wbe65w_w -> k3-k8 -> e8b2e10ke10we11w_b
+ * e52ke11wbe9wbe10w_w -> i7-k7 -> e54ke9we10we11w_b (defender win via no moves)
+ * e31be10bwe9bke9bwe10b_b -> j9-k9 -> e32be9be10bke9be11b_w
+ * e65be31bke9bw_b -> k6-k4 -> e87be9bke9b_w
+ * e32we9wbe8webe5ke4w_w -> i7-j7 -> e32we9wbe9wbe5ke4w_b (defender win via no moves)
+ * e32we9wbe8wbe6ke2wb2e9we22w_w -> k3-k5 -> e32we9wbe8wbe6ke2wb2e9w2_b
+ * e42we9wbe6ke2wbe32w_w -> j3-j5 -> e42we9wbe6ke2wbe10w_b
+ * e31wbe9wbe8we7k_w -> i7-k7 -> e31wbe9wbe10we5k_b
+ * e20be10wbe9wbe10be5k_b -> k7-j-7 -> e20be10wbe9wbe9be6k_w
+ * e42w2e8kb2e8wb2e9we11w_w -> k3-k4 -> e42w2e8kb2e8wb2e9w2_b (defender win via no moves)
+ * 
+ * e8b2e21kbe7we2be53wbe9be9b_w -> j9-j10 ->
+ *    e8b2e10ke11be7we2be53wbe9be9b_b -> k9-k10 ->
+ *    e8b2e10kbe18we2be53wbe9be9b_w -> j3-j9 ->
+ *    e8b2e10kbe9we8we2be54be9be9b_b -> k8-k9 ->
+ *    e8b2e10kbe9wbe7we57be9be9b_w -> h8-k8 -> e8b2e10ke10we11we54be9be9b_b
+ */
+
+// e27ke15be5w2e3be6w2eb2e5w2e3be8beb_e
 
 enum Piece {
   None = 0,
@@ -25,12 +56,46 @@ enum Piece {
   Queen = 6,
 
   White = 8,
-  Black = 16
+  Black = 16,
+
+  Any = White | Black
 }
+
+enum Mode {
+  Setup = 0,
+  Local = 1,
+  Online = 2,
+  Computer = 3
+}
+const SELECTED_GAME_MODE = Mode.Local
+// const SELECTED_GAME_MODE = Mode.Setup
 
 type MousePosition = {
   x: number,
   y: number
+}
+
+enum WinCondition {
+  Escape = 'Corner Escape',
+  Fort = 'Exit Fort',
+  Capture = 'King Captured',
+  Moves = 'No Legal Moves',
+  Surround = 'Surrounding All Defenders',
+  Perpetual = 'Repeating Board Position Three Times',
+  Resign = 'Resignation',
+  Draw = 'Draw'
+}
+
+type Winner = Piece.Black | Piece.White | null
+
+class Win {
+  winner: Winner = null
+  condition: WinCondition = WinCondition.Draw
+
+  constructor(winner: Winner, condition: WinCondition) {
+    this.winner = winner
+    this.condition = condition
+  }
 }
 
 const isLightSquare = (index: number): boolean => (index + Math.floor(index / BW)) % 2 === 0 
@@ -245,8 +310,7 @@ const renderPiece = (piece: Piece, index: number, pos?: MousePosition) => {
   }
 }
 
-
-const getOppositeColor = (color: Piece): Piece => getPieceColor(color) === Piece.White ? Piece.Black : Piece.White
+const getOppositeColor = (color: Piece): Piece.White | Piece.Black => getPieceColor(color) === Piece.White ? Piece.Black : Piece.White
 
 const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOARD_SIZE_PX, previewOnly }) => {  
   const DRAG_SCALE_FACTOR = BOARD_SIZE_PX / (BW * TW) // idk why this is needed, but without it, dragging pieces doesn't follow mouse 1:1
@@ -260,15 +324,23 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
   const [dragEnabled, setDragEnabled] = createSignal<boolean>(false)
   const [draggedIndex, setDraggedIndex] = createSignal<number>(-1)
   const [mousePosition, setMousePosition] = createSignal<MousePosition>({ x: 0, y: 0 })
-  const [colorToMove, setColorToMove] = createSignal<Piece>(Piece.Black)
+  const [colorToMove, setColorToMove] = createSignal<Piece>(Piece.Any)
   const [kingLocation, setKingLocation] = createSignal<{ [key: number]: number }>({ [Piece.Black]: 4, [Piece.White]: 60 })
   const [legalMoves, setLegalMoves] = createSignal<{ [key: number]: number[][] }>({ [Piece.White]: Array(NUM_BOARD_SQUARES).fill([]), [Piece.Black]: Array(NUM_BOARD_SQUARES).fill([]) })
   const [kingMoved, setKingMoved] = createSignal<{ [key: number]: boolean }>({ [Piece.White]: false, [Piece.Black]: false })
-  const [winner, setWinner] = createSignal<string | null>(null)
+  const [winner, setWinner] = createSignal<Win | null>(null)
   const [moveStack, setMoveStack] = createSignal<string[]>([])
+  const [boardPositions, setBoardPositions] = createSignal<{ [key: string]: number}>({})
   const [cursorStyle, setCursorStyle] = createSignal<'Default' | 'Grab' | 'Grabbing'>('Default')
   const [fenString, setFenString] = createSignal<string>('')
   const [importedFenString, setImportedFenString] = createSignal<string>('')
+  const [gameMode, setGameMove] = createSignal<Mode>(SELECTED_GAME_MODE)
+  const [gameRules, setGameRules] = createSignal({
+    strongKing: true,
+    exitFortWin: true,
+    shieldWallCapture: true,
+    defenderLossOnRepetition: true
+  })
 
   const [lightSquareFill, setLightSquareFill] = createSignal<string>('#f0d9b5')
   const [darkSquareFill, setDarkSquareFill] = createSignal<string>('#f7e2bf')
@@ -294,7 +366,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
    *  OR: #dc143c (crimson)
    */
 
-
+  const isColorToMove = (piece: Piece) => piece & colorToMove()
 
   const getKingLocation = (): number => kingLocation()[Piece.White]
 
@@ -307,11 +379,10 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
     const rank = Math.floor(y / TILE_SIZE_PX)
   
     const index = getBoardIndexFromRankFile(rank, file)
-    // console.log(x, y, index)
     return index
   }
 
-  const getColorEncoding = (color: Piece) => color === Piece.White ? 'w' : 'b'
+  const getColorEncoding = (color: Piece) => color === Piece.White ? 'w' : color === Piece.Black ? 'b' : 'e'
 
   const calculateFenString = (board: number[], colorToMove: Piece): string => {
     // TODO: replace logic with bitboards
@@ -328,13 +399,17 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
       count = 0
       prevPiece = piece
     }
-    return `${fen}-${getColorEncoding(colorToMove)}`
+    return `${fen}_${getColorEncoding(colorToMove)}`
   }
 
-  const updateBoard = (newBoard: number[] = board()) => {
+  const updateBoard = (newBoard: number[] = board(), updateFen: boolean = false, fenString: string = '', color: Piece = colorToMove()) => {
     setBoard(Array(NUM_BOARD_SQUARES).fill(0))   // temporary solution to force board to rerender
-    setFenString(calculateFenString(newBoard, colorToMove()))
     setBoard(newBoard)
+
+    if (updateFen) {
+      fenString ||= calculateFenString(newBoard, color)
+      setFenString(fenString)
+    }
   }
 
   const getPieceFromFenChar = (char: string): Piece => {
@@ -353,7 +428,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
     const newBoard: number[] = Array(NUM_BOARD_SQUARES).fill(0)
     for (let index = 0; index < fen.length; index++) {
       const char = fen[index]
-      if (!Number(char)) {
+      if (isNaN(Number(char))) {
         const count = Number(countStr) || 1
         const piece = getPieceFromFenChar(pieceStr)
         for (let i = 0; i < count; i++) newBoard[boardIndex + i] = piece
@@ -365,16 +440,21 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
       }
     }
 
-    setColorToMove(getPieceColor(getPieceFromFenChar(fen[fen.length - 1])) || Piece.Black)
+    setColorToMove(gameMode() === Mode.Setup ? Piece.Any : (getPieceColor(getPieceFromFenChar(fen.at(-1) ?? '')) || 1))
 
     setBoard(newBoard)
     
     const findKingLocation = (color: Piece): number => board().findIndex(piece => getPieceType(piece) === Piece.King && getPieceColor(piece) === color)
     setKingLocation(({ [Piece.Black]: findKingLocation(Piece.Black), [Piece.White]: findKingLocation(Piece.White) }))
     
-    updateBoard(newBoard)
+    updateBoard(newBoard, true, fen)
 
-    updateLegalMovesAndThreats()
+    if (gameMode() !== Mode.Setup) updateLegalMovesAndThreats()
+
+    // TODO: reset all variables
+    setMoveStack([])
+
+    setBoardPositions({ [fen]: 1 })
   }
 
   const onMouseDown = (event: MouseEvent) => {
@@ -388,12 +468,11 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
     if (event.button !== 0 || previewOnly) return; // exclude all mouse clicks except for left mouse button (button 0)
     const index = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY })
     const piece = board()[index]
-    const isCorrectColorToMove = colorToMove() === getPieceColor(piece)
-    if (isCorrectColorToMove) {
+    if (isColorToMove(piece)) {
       setMousePosition({ x: event.offsetX, y: event.offsetY })
       setDraggedIndex(index)
       setDragEnabled(true)
-      highlightLegalMoves(index)
+      if (gameMode() !== Mode.Setup) highlightLegalMoves(index)
       setCursorStyle('Grabbing')
       updateBoard()
     }
@@ -407,7 +486,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
     } else {
       const boardIndex = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY })
       const pieceAtIndex = board()[boardIndex]
-      setCursorStyle(getPieceColor(pieceAtIndex) === colorToMove() ? 'Grab' : 'Default')
+      setCursorStyle(isColorToMove(pieceAtIndex) ? 'Grab' : 'Default')
     }
   }
 
@@ -485,16 +564,54 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
     .map(offset => ({ offset, target: index + offset}))
     .filter(({ target: i }) => isEnemy(board, index, i));
 
-  const checkWinConditions = (newBoard: number[], moves: { [key: number]: number[][] }): Piece => {
+  const checkCaptures = (newBoard: number[], newIndex: number) => {
+    // for piece that just moved, get all neighboring enemy pieces
+    const neighborEnemies: { offset: number, target: number }[] = getNeighborEnemies(newBoard, newIndex)
+    
+    // for each neighbor enemy, find the captures
+    let capturedPieces = neighborEnemies.filter(({ offset, target }) => {
+      // piece is captured if sandwiched
+      return (isEnemy(newBoard, target, target + offset) || kingSquares()[target + offset] || (
+        // throne is always hostile to attackers; only hostile to defenders if king is not on throne
+        target + offset === throneIndex() && getKingLocation() !== throneIndex()
+      )) && getPieceType(newBoard[target]) !== Piece.King && NUM_SQUARES_TO_EDGE[target][offset]
+    })
+
+    // shield wall capture
+    const edgeOffset = ORTHOGONAL_OFFSETS.find(offset => NUM_SQUARES_TO_EDGE[newIndex][offset] === 0)
+    if (edgeOffset) {
+      for (const neighborEnemy of neighborEnemies.filter(({ offset }) => offset !== -edgeOffset)) {
+        const { offset, target } = neighborEnemy
+        const enemies = []
+        let index = target
+        while (index > 0 && index < NUM_BOARD_SQUARES - 1 && NUM_SQUARES_TO_EDGE[index][offset] > 0 && isEnemy(newBoard, newIndex, index)) {
+          enemies.push(({ target: index, offset }))
+          index += offset
+        }
+
+        // check if bookend friendly pieces
+        if (((newBoard[index] && !isEnemy(newBoard, newIndex, index)) || kingSquares()[index]) && enemies.every(e => isEnemy(newBoard, e.target, e.target - edgeOffset))) {
+          capturedPieces = capturedPieces.concat(enemies.filter(({ target }) => getPieceType(newBoard[target]) !== Piece.King))
+        }
+      }
+    }
+
+    return capturedPieces
+  }
+
+  const checkWinConditions = (newBoard: number[], moves: { [key: number]: number[][] }, newFenString: string): Win | null => {
     // is king captured?
     if (ORTHOGONAL_OFFSETS.every(offset => NUM_SQUARES_TO_EDGE[getKingLocation()][offset] && (isEnemy(newBoard, getKingLocation(), getKingLocation() + offset) ||
-      getKingLocation() + offset === throneIndex()))) return Piece.Black
+      getKingLocation() + offset === throneIndex()))) return new Win(Piece.Black, WinCondition.Capture)
 
     // no more legal moves
-    if (!moves[colorToMove()].filter(moves => moves?.length).length) return colorToMove() === Piece.White ? Piece.Black : Piece.White
-    
+    if (!moves[colorToMove()].filter(moves => moves?.length).length) return new Win(getOppositeColor(colorToMove()), WinCondition.Moves)
+
+    // check for perpetual moves loss
+    if (boardPositions()[newFenString] > 2) return new Win(Piece.Black, WinCondition.Perpetual)
+
     // king reaches corner
-    if (kingSquares()[getKingLocation()] && getKingLocation() !== throneIndex()) return Piece.White
+    if (kingSquares()[getKingLocation()] && getKingLocation() !== throneIndex()) return new Win(Piece.White, WinCondition.Escape)
 
     // all defenders surrounded?
     let fill: boolean[] = Array(NUM_BOARD_SQUARES).fill(false)
@@ -517,7 +634,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
     )
 
     // if all defenders are surrounded
-    if (!foundEdge) return Piece.Black
+    if (!foundEdge) return new Win(Piece.Black, WinCondition.Surround)
 
     // exit fort
     const isKingOnEdge = ORTHOGONAL_OFFSETS.some(offset => !NUM_SQUARES_TO_EDGE[getKingLocation()][offset])
@@ -567,17 +684,16 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
       return !vulnerableDefenders.length ? true : defenders.some(defender => checkExitFort([...ignoredDefenders, defender]));
     }
 
-    if (checkExitFort()) return Piece.White
+    if (checkExitFort()) return new Win(Piece.White, WinCondition.Fort)
 
     // no winner
-    return 0
+    return null
   }
-
   
   const movePiece = (prevIndex: number, newIndex: number, piece?: number): void => {
     piece ||= board()[prevIndex]
     const newBoard = board().slice()
-    newBoard[prevIndex] = 0
+    newBoard[prevIndex] = Piece.None
     newBoard[newIndex] = piece
     const pieceColor = getPieceColor(piece)
     const pieceType = getPieceType(piece)
@@ -587,66 +703,46 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
       setKingLocation(prev => ({ ...prev, [pieceColor]: newIndex }))
     }
 
-    setColorToMove(prevColor => getOppositeColor(prevColor))
-
-    // check if capture
-
-    // for piece that just moved, get all neighboring enemy pieces
-    const neighborEnemies: { offset: number, target: number }[] = getNeighborEnemies(newBoard, newIndex)
-    
-    // for each neighbor enemy, find the captures
-    let capturedPieces = neighborEnemies.filter(({ offset, target }) => {
-      // piece is captured if sandwiched
-      return (isEnemy(newBoard, target, target + offset) || kingSquares()[target + offset] || (
-        // throne is always hostile to attackers; only hostile to defenders if king is not on throne
-        target + offset === throneIndex() && getKingLocation() !== throneIndex()
-      )) && getPieceType(newBoard[target]) !== Piece.King && NUM_SQUARES_TO_EDGE[target][offset]
-    })
-
-    // console.log(neighborEnemies, capturedPieces)
-
-    // shield wall capture
-    const edgeOffset = ORTHOGONAL_OFFSETS.find(offset => NUM_SQUARES_TO_EDGE[newIndex][offset] === 0)
-    if (edgeOffset) {
-      for (const neighborEnemy of neighborEnemies.filter(({ offset }) => offset !== -edgeOffset)) {
-        const { offset, target } = neighborEnemy
-        const enemies = []
-        let index = target
-        while (index > 0 && index < NUM_BOARD_SQUARES - 1 && NUM_SQUARES_TO_EDGE[index][offset] > 0 && isEnemy(newBoard, newIndex, index)) {
-          enemies.push(({ target: index, offset }))
-          index += offset
-        }
-
-        // check if bookend friendly pieces
-        if (((newBoard[index] && !isEnemy(newBoard, newIndex, index)) || kingSquares()[index]) && enemies.every(e => isEnemy(newBoard, e.target, e.target - edgeOffset))) {
-          capturedPieces = capturedPieces.concat(enemies.filter(({ target }) => getPieceType(newBoard[target]) !== Piece.King))
-        }
-      }
+    if (gameMode() === Mode.Setup) {
+      setColorToMove(Piece.Any)
+      const fen = calculateFenString(newBoard, Piece.Any)
+      updateBoard(newBoard, true, fen)
     }
+    else {
+      setColorToMove(prevColor => getOppositeColor(prevColor))
 
-    // console.log(capturedPieces)
-    capturedPieces.forEach(({ target }) => newBoard[target] = 0)
+      // check if capture
+      const capturedPieces = checkCaptures(newBoard, newIndex)
+      capturedPieces.forEach(({ target }) => newBoard[target] = Piece.None)
 
-    const moves = calculateLegalMoves(newBoard, { colorToMove: colorToMove(), kingLocation: kingLocation() })
+      const moves = calculateLegalMoves(newBoard, { colorToMove: colorToMove(), kingLocation: kingLocation() })
 
-    // check for perpetual
-    setMoveStack(stack => {
-      stack.push(fenString())
-      return stack
-    })
+      // add move to move stack and board position history
+      setMoveStack(stack => {
+        // TODO: replace with piece movement
+        stack.push('g5-g7')
+        return stack
+      })
+      const newFenString = calculateFenString(newBoard, colorToMove())
+      setBoardPositions(positions => {
+        positions[newFenString] ??= 0
+        positions[newFenString]++
+        return positions
+      })
 
-    // check win conditions
-    const winner = checkWinConditions(newBoard, moves)
-    if (winner) {
-      setWinner(`${winner === Piece.White ? 'Attackers' : 'Defenders'} win!`)
-      setColorToMove(1)
-    } else setLegalMoves(moves)
+      // check win conditions
+      const win = checkWinConditions(newBoard, moves, newFenString)
+      if (win) {
+        setWinner(win)
+        setColorToMove(1)
+      }
+      else setLegalMoves(moves)
 
-    updateBoard(newBoard)
+      updateBoard(newBoard, true, newFenString)
+    }
   }
 
   const onMouseUp = (event: MouseEvent) => {
-    // console.log('Dragged Index:', draggedIndex())
     setHighlightedSquares([])
     updateBoard()
     if (!dragEnabled()) return
@@ -655,9 +751,9 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
     // Legal move logic here
     const index = getBoardIndexFromMousePosition({ x: mousePosition().x, y: mousePosition().y })
     const piece = board()[draggedIndex()]
-    const legalMove = isLegalMove(draggedIndex(), index)
+    const legalMove = gameMode() === Mode.Setup || isLegalMove(draggedIndex(), index)
 
-    setCursorStyle(getPieceColor(piece) === colorToMove() ? 'Grab' : 'Default')
+    setCursorStyle(isColorToMove(piece) ? 'Grab' : 'Default')
     
     // If legal move, move piece to new board index
     if (legalMove) movePiece(draggedIndex(), index, piece)
@@ -666,10 +762,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
 
   const resetBoard = () => {
     importGameFromFen(DEFAULT_BOARD_FEN)
-    // importGameFromFen(EXIT_FORD_TESTING_FEN)
-    // importGameFromFen(SHIELD_WALL_TESTING_FEN)
-    // importGameFromFen(SHIELD_WALL_TESTING2_FEN)
-    // importGameFromFen(SHIELD_WALL_TESTING3_FEN)
+    if (gameMode() === Mode.Setup) setColorToMove(Piece.Any)
   }
 
   function getRandomInt(max: number): number {
@@ -719,6 +812,14 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
   
   setDefenderSquares(() => board().map(square => !!square))
 
+  const offerDraw = () => {}
+  const resign = () => {
+    if (colorToMove() === Piece.Black || colorToMove() === Piece.White) {
+      setWinner(new Win(getOppositeColor(colorToMove()), WinCondition.Resign))
+      setColorToMove(Piece.None)
+    }
+  }
+
   return (
     <>
       <div class={`${styles.BoardWrapper} ${previewOnly ? styles.PreviewBoard : ''} ${styles[cursorStyle()] ?? ''}`}>
@@ -751,8 +852,17 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOA
       {
         !previewOnly &&
         <div class={styles.sidebar}>
-          <div class={styles.Row}>{winner() ?? ''}</div>
+          <div class={styles.Row}>Game Mode Select:</div>
+          <div class={styles.Row}><button>Local</button></div>
+          <div class={styles.Row}><button>Online</button></div>
+          <div class={styles.Row}><button>Against Computer</button></div>
+          <div class={styles.Row}><button>Setup</button></div>
+          <div class={styles.Row}>{winner() ? `${winner()?.winner === Piece.White ? 'Defenders' : 'Attackers'} win via ${winner()?.condition}!` : ''}</div>
           <div class={styles.Row}><button onClick={() => navigator.clipboard.writeText(fenString())}>Copy Game to Clipboard</button></div>
+          <div class={styles.Row}>
+            <button onClick={offerDraw}>Offer Draw</button>
+            <button onClick={resign}>Resign</button>
+          </div>
           {/* @ts-ignore */}
           <div class={styles.Row}><input type="text" value={importedFenString()} onChange={e => setImportedFenString(e.target.value)} /><button onClick={() => importGameFromFen(importedFenString())}>Import Game</button></div>
           {/* @ts-ignore */}
