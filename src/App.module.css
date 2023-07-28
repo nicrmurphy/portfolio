@@ -236,7 +236,7 @@ a {
 
 .sidebar {
   margin: 2em;
-  width: 8em;
+  width: 12em;
   font-size: calc(10px + 2vmin);
   color: white;
 
@@ -281,6 +281,11 @@ a {
   /* background: rgba(0,0,0,.1); */
   /* padding: 3em; */
   /* border-radius: 5px; */
+}
+
+.Board {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .PreviewBoard {
