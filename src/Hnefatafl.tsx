@@ -749,7 +749,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       setColorToMove(Piece.None)
       setGameInProgress(false)
       if (gameMode() === Mode.Online && server()?.isActive()) {
-        server()?.sendResign()
+        server()?.sendResign({ roomCode: roomCode(), fenString: 'temp', playerColor: 0, opponentColor: 0 })
         returnToMainScreen()
       }
     }

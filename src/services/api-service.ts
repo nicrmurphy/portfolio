@@ -68,8 +68,8 @@ export class GameServerConnection {
     this.socket.emit('move', data)
   }
 
-  sendResign = (): void => {
-    this.socket.emit('resign')
+  sendResign = (data: GameState): void => {
+    this.socket.emit('resign', data)
   }
 
   disconnect = (): void => {
