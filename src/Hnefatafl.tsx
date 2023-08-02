@@ -1,7 +1,7 @@
 import { Component, For, JSX, Ref, createSignal } from "solid-js";
 
 import styles from "./App.module.css";
-import { GameServerConnection } from "./services/api-service";
+import { GameServerConnection, GameState, MoveData } from "./services/api-service";
 
 import svgPieces, { TW } from './svg/Pieces'
 import { Wood as SvgWoodTexture } from "./svg/Textures"
@@ -624,7 +624,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
         if (server()?.isActive()) {
           const moveData = { id: 1, prevIndex, newIndex, newFenString }
           console.log('sending move to server', moveData)
-          server()!.sendMove(moveData)
+          server()!.sendMove({ gameState: { roomCode: roomCode(), fenString: 'temp', playerColor: 0, opponentColor: 0 }, moveData })
         }
       }
     }
@@ -774,16 +774,17 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
             // host new room
             const code = await server.createRoom()
             setRoomCode(code)
-            await server.opponentPlayer()
-            server.sendStartGame({ fenString: 'temp', playerColor: getOppositeColor(playerColor()), opponentColor: playerColor() })
+            await server.opponentPlayerJoin()
+            server.sendStartGame({ roomCode: code, fenString: 'temp', playerColor: getOppositeColor(playerColor()), opponentColor: playerColor() })
           }
             setServer(server)
             startGame()
             
-            server.onOpponentMove = data => {
-              console.log('received a move!', data)
-              const piece = board()[data.prevIndex]
-              if (isColorToMove(piece) && isLegalMove(data.prevIndex, data.newIndex)) movePiece(data.prevIndex, data.newIndex, piece)
+            server.onOpponentMove = (data: { gameState: GameState, moveData: MoveData }) => {
+              const { moveData } = data
+              console.log('received a move!', moveData)
+              const piece = board()[moveData.prevIndex]
+              if (isColorToMove(piece) && isLegalMove(moveData.prevIndex, moveData.newIndex)) movePiece(moveData.prevIndex, moveData.newIndex, piece)
             }
             server.onOpponentResign = () => {
               resign()

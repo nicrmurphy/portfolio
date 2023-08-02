@@ -1,8 +1,8 @@
 import { io } from 'socket.io-client'
 
 type BoardData = { fenString: string }
-type GameState = { fenString: string, playerColor: number, opponentColor: number }
-type MoveData = { id: number, prevIndex: number, newIndex: number, newFenString: string }
+export type GameState = { roomCode: string, fenString: string, playerColor: number, opponentColor: number }
+export type MoveData = { id: number, prevIndex: number, newIndex: number, newFenString: string }
 
 /**
  * 
@@ -46,12 +46,9 @@ export class GameServerConnection {
     })
   }
 
-  opponentPlayer = async (): Promise<any> => {
+  opponentPlayerJoin = async (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      this.socket.on('join', data => {
-        console.log(data)
-        resolve(data)
-      })
+      this.socket.on('join', () => resolve())
     })
   }
 
@@ -67,7 +64,7 @@ export class GameServerConnection {
     this.socket.emit('start', data)
   }
 
-  sendMove = (data: MoveData): void => {
+  sendMove = (data: { gameState: GameState, moveData: MoveData }): void => {
     this.socket.emit('move', data)
   }
 
