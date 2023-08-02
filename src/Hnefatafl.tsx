@@ -1,8 +1,7 @@
 import { Component, For, JSX, Ref, createSignal } from "solid-js";
 
 import styles from "./App.module.css";
-import { connectToGameServer } from "./services/api-service";
-import { Socket } from "socket.io-client";
+import { GameServerConnection } from "./services/api-service";
 
 import svgPieces, { TW } from './svg/Pieces'
 import { Wood as SvgWoodTexture } from "./svg/Textures"
@@ -165,27 +164,16 @@ const PiecePlacer = (index: number, piece: JSX.Element, pos?: MousePosition) => 
 </g>
 
 const WhiteKing = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.WhiteKing(), pos)
-
 const WhitePawn = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.WhitePawn(), pos)
-
 const WhiteKnight = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.WhiteKnight(), pos)
-
 const WhiteBishop = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.WhiteBishop(), pos)
-
 const WhiteRook = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.WhiteRook(), pos)
-
 const WhiteQueen = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.WhiteQueen(), pos)
-
 const BlackKing = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.BlackKing(), pos)
-
 const BlackPawn = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.BlackPawn(), pos)
-
 const BlackKnight = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.BlackKnight(), pos)
-
 const BlackBishop = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.BlackBishop(), pos)
-
 const BlackRook = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.BlackRook(), pos)
-
 const BlackQueen = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.BlackQueen(), pos)
 //#endregion svg pieces
 
@@ -249,8 +237,10 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
   const [cursorStyle, setCursorStyle] = createSignal<'Default' | 'Grab' | 'Grabbing'>('Default')
   const [fenString, setFenString] = createSignal<string>('')
   const [importedFenString, setImportedFenString] = createSignal<string>('')
+  const [roomCode, setRoomCode] = createSignal<string>('')
   const [gameMode, setGameMode] = createSignal<Mode>(SELECTED_GAME_MODE)
   const [gameInProgress, setGameInProgress] = createSignal<boolean>(false)
+  const [showColorSelect, setShowColorSelect] = createSignal<boolean>(false)
   const [gameRules, setGameRules] = createSignal({
     strongKing: true,
     exitFortWin: true,
@@ -262,7 +252,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
   const [darkSquareFill, setDarkSquareFill] = createSignal<string>('#f7e2bf')
   const [kingSquareFill, setKingSquareFill] = createSignal<string>('#ffffff')
 
-  const [server, setServer] = createSignal<Socket>()
+  const [server, setServer] = createSignal<GameServerConnection>()
 
   let boardSvgRef: Ref<SVGSVGElement | ((el: SVGSVGElement) => void) | undefined>
 
@@ -658,7 +648,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       const win = checkWinConditions(newBoard, moves, newFenString)
       if (win) {
         setWinner(win)
-        setColorToMove(1)
+        setColorToMove(Piece.None)
+        setGameInProgress(false)
       }
       else setLegalMoves(moves)
 
@@ -666,8 +657,10 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
 
       if (gameMode() === Mode.Online) {
         // TODO: handle disconnected
-        if (server()?.active) {
-          server()!.emit('move', { id: 1, prevIndex, newIndex, newFenString })
+        if (server()?.isActive()) {
+          const moveData = { id: 1, prevIndex, newIndex, newFenString }
+          console.log('sending move to server', moveData)
+          server()!.sendMove(moveData)
         }
       }
     }
@@ -686,7 +679,13 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     setCursorStyle(canMovePiece(piece) ? 'Grab' : 'Default')
     
     // If legal move, move piece to new board index
-    if (legalMove) movePiece(draggedIndex(), index, piece)
+    if (legalMove) {
+      // moving piece on board without selecting game mode enters local game
+      if (!winner() && !gameInProgress() && gameMode() === Mode.Local) {
+        setGameInProgress(true)
+      }
+      movePiece(draggedIndex(), index, piece)
+    }
     else updateBoard()
   }
 
@@ -742,36 +741,77 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
   
   setDefenderSquares(() => board().map(square => !!square))
 
-  const offerDraw = () => {}
+  const offerDraw = () => { alert('Not yet implemented!') }
   const resign = () => {
-    if (colorToMove() === Piece.Black || colorToMove() === Piece.White) {
+    if (gameInProgress()) {
       setWinner(new Win(getOppositeColor(colorToMove()), WinCondition.Resign))
       setColorToMove(Piece.None)
+      setGameInProgress(false)
     }
   }
 
-  const setGameModeToOnline = () => {
+  const setGameModeToOnline = async (roomCode?: string) => {
+    setWinner(null)
     if (gameMode() !== Mode.Online) {
       setGameMode(Mode.Online)
       setPlayerColor(Piece.Black)
-      if (!server()?.active) {
-        const socket = connectToGameServer()
-        socket.on('move', data => {
-          console.log('received a move!', data)
-          const piece = board()[data.prevIndex]
-          if (isColorToMove(piece) && isLegalMove(data.prevIndex, data.newIndex)) movePiece(data.prevIndex, data.newIndex, piece)
-        })
-        
-        setServer(socket)
+      if (!server()?.isActive()) {
+        const server = new GameServerConnection()
+        try {
+          if (roomCode) {
+            // join room
+            await server.joinRoom(roomCode)
+            setPlayerColor(Piece.White)
+          } else {
+            // host new room
+            const code = await server.createRoom()
+            setRoomCode(code)
+            await server.opponentPlayer()
+          }
+            setServer(server)
+            setGameInProgress(true)
+            server.onOpponentMove = data => {
+              console.log('received a move!', data)
+              const piece = board()[data.prevIndex]
+              if (isColorToMove(piece) && isLegalMove(data.prevIndex, data.newIndex)) movePiece(data.prevIndex, data.newIndex, piece)
+            }
+        } catch (err) {
+          alert('Failed to Connect - No room found at given code!')
+          console.error(err)
+          setGameMode(SELECTED_GAME_MODE)
+        }
       }
     }
   }
 
+  const returnToMainScreen = async () => {
+    setGameMode(SELECTED_GAME_MODE)
+    setRoomCode('')
+  }
+
   const setGameModeToSetup = () => {
     setGameMode(Mode.Setup)
+    setGameInProgress(false)
+    setColorToMove(Piece.Any)
+    setPlayerColor(Piece.Any)
+    setShowColorSelect(false)
   }
-  const setGameModeToLocal = () => {}
-  const setGameModeToComputer = () => {}
+
+  const setGameModeToComputer = () => {
+    setGameMode(Mode.Computer)
+    setShowColorSelect(true)
+  }
+
+  const startGame = (selectedColor: Piece, mode: Mode = gameMode()) => {
+    resetBoard()
+    setMoveStack([])
+    setGameMode(mode)
+    setShowColorSelect(false)
+    setPlayerColor(selectedColor)
+    setColorToMove(Piece.Black)
+    setWinner(null)
+    setGameInProgress(true)
+  }
 
   return (
     <>
@@ -803,29 +843,56 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       {
         !previewOnly &&
         <div class={styles.sidebar}>
-          <div class={styles.Row}>{pieceIsWhite(colorToMove()) ? 'White' : pieceIsBlack(colorToMove()) ? 'Black' : 'Any'} to Move</div>
-          <div class={styles.Row}>Player Color: {pieceIsWhite(playerColor()) ? 'White' : pieceIsBlack(playerColor()) ? 'Black' : 'Any'}</div>
-          <div class={styles.Row}><button onClick={() => setPlayerColor(prev => getOppositeColor(prev))}>Change Player Color</button></div>
+          {gameInProgress() && <div class={styles.Row}>{pieceIsWhite(colorToMove()) ? 'White' : pieceIsBlack(colorToMove()) ? 'Black' : 'Any'} to Move</div>}
           {
             !gameInProgress() && <>
-              <div class={styles.Row}>Game Mode Select:</div>
-              <div class={styles.Row}><button onClick={setGameModeToLocal}>Local</button></div>
-              <div class={styles.Row}><button onClick={setGameModeToOnline}>Host Online Game</button></div>
-              <div class={styles.Row}><input type="text" value={importedFenString()} onChange={e => setImportedFenString(e.target.value)} /><button onClick={setGameModeToOnline}>Join Online Game</button></div>
-              <div class={styles.Row}><button onClick={setGameModeToComputer}>Against Computer</button></div>
-              <div class={styles.Row}><button onClick={setGameModeToSetup}>Setup</button></div>
+              <div class={styles.Row}>{winner() ? `${winner()?.winner === Piece.White ? 'Defenders' : 'Attackers'} win via ${winner()?.condition}!` : ''}</div>
+              {
+                gameMode() === Mode.Online ? <>
+                  {
+                    !winner() && <>
+                      <div class={styles.Row}>Room Code: {roomCode()}</div>
+                      <div class={styles.Row}>Waiting for opponent...</div>
+                    </>
+                  }
+                  <div class={styles.Row}><button onClick={returnToMainScreen}>Leave Room</button></div>
+                  <div class={styles.Row}>Player Color: {pieceIsWhite(playerColor()) ? 'White' : pieceIsBlack(playerColor()) ? 'Black' : 'Any'}</div>
+                  <div class={styles.Row}><button onClick={() => setPlayerColor(prev => getOppositeColor(prev))}>Change Player Color</button></div>
+                </> : <>
+                  <div class={styles.Row}><button onClick={() => startGame(Piece.Any, Mode.Local)}>Start a Local Match</button></div>
+                  <div class={styles.Row}><button disabled onClick={setGameModeToComputer}>Start a Match Against Computer</button></div>
+                  <div class={styles.Row}><button onClick={() => setGameModeToOnline()}>Host Online Match</button></div>
+                  <div class={styles.Row}><input type="text" placeholder="Enter Room Code" value={roomCode()} onInput={e => setRoomCode(e.target.value)} /><button disabled={!roomCode()} onClick={() => setGameModeToOnline(roomCode())}>Join Online Match</button></div>
+                  <div class={styles.Row}><button onClick={setGameModeToSetup}>Setup Custom Board</button></div>
+                </>
+              }
             </>
           }
-          <div class={styles.Row}>{winner() ? `${winner()?.winner === Piece.White ? 'Defenders' : 'Attackers'} win via ${winner()?.condition}!` : ''}</div>
-          <div class={styles.Row}><button onClick={() => navigator.clipboard.writeText(fenString())}>Copy Game to Clipboard</button></div>
-          <div class={styles.Row}>
-            <button onClick={offerDraw}>Offer Draw</button>
-            <button onClick={resign}>Resign</button>
-          </div>
-          <div class={styles.Row}><input type="text" value={importedFenString()} onChange={e => setImportedFenString(e.target.value)} /><button onClick={() => importGameFromFen(importedFenString())}>Import Game</button></div>
-          <div class={styles.Row}>Light Squares: <input type="color" value={lightSquareFill()} onChange={(e) => setLightSquareFill(e.target.value)} /></div>
-          <div class={styles.Row}>Dark Squares: <input type="color" value={darkSquareFill()} onChange={(e) => setDarkSquareFill(e.target.value)} /></div>
-          <div class={styles.Row}>King Squares: <input type="color" value={kingSquareFill()} onChange={(e) => setKingSquareFill(e.target.value)} /></div>
+          {
+            showColorSelect() && <>
+              <button onClick={() => startGame(Piece.Black)}>Play as Black</button>
+              <button onClick={() => startGame(Piece.White)}>Play as White</button>
+            </>
+          }
+          {
+            gameInProgress() &&
+            <div class={styles.Row}>
+              <button onClick={offerDraw}>Offer Draw</button>
+              <button onClick={resign}>Resign</button>
+            </div>
+          }
+          <div class={styles.Row}><button onClick={() => navigator.clipboard.writeText(fenString())}>Copy Board Position to Clipboard</button></div>
+          {
+            gameMode() === Mode.Setup && <>
+            <div class={styles.Row}>
+              <input type="text" value={importedFenString()} onChange={e => setImportedFenString(e.target.value)} />
+              <button onClick={() => importGameFromFen(importedFenString())}>Import Game</button>
+            </div>
+            <div class={styles.Row}>Light Squares: <input type="color" value={lightSquareFill()} onChange={(e) => setLightSquareFill(e.target.value)} /></div>
+            <div class={styles.Row}>Dark Squares: <input type="color" value={darkSquareFill()} onChange={(e) => setDarkSquareFill(e.target.value)} /></div>
+            <div class={styles.Row}>King Squares: <input type="color" value={kingSquareFill()} onChange={(e) => setKingSquareFill(e.target.value)} /></div>
+          </>
+          }
         </div>
       }
     </>
