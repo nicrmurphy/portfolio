@@ -22,8 +22,8 @@ render(() =>
       <Route path="/" component={App} />
       <Route path="/chess" component={PlayChess} />
       <Route path="/hnefatafl" component={PlayHnefatafl} />
-      <Route path="/royalur" component={PlayRoyalUr} />
-      <Route path="/*ur" element={<Navigate href={"/royalur"}/>} />
+      {/* <Route path="/royalur" component={PlayRoyalUr} />
+      <Route path="/*ur" element={<Navigate href={"/royalur"}/>} /> */}
       <Route path="/*" element={<Navigate href={"/"}/>} />
     </Routes>
   </Router>, root!);
