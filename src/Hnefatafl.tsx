@@ -593,7 +593,6 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
 
       fill = Array(NUM_BOARD_SQUARES).fill(false)
       defenders.forEach(index => fill[index] = true)
-      setHighlightedSquares(fill)
 
       return !vulnerableDefenders.length ? true : defenders.some(defender => checkExitFort([...ignoredDefenders, defender]));
     }
@@ -747,6 +746,10 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       setWinner(new Win(getOppositeColor(colorToMove()), WinCondition.Resign))
       setColorToMove(Piece.None)
       setGameInProgress(false)
+      if (gameMode() === Mode.Online && server()?.isActive()) {
+        server()?.sendResign()
+        returnToMainScreen()
+      }
     }
   }
 
@@ -761,19 +764,27 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
           if (roomCode) {
             // join room
             await server.joinRoom(roomCode)
-            setPlayerColor(Piece.White)
+
+            // get player color
+            const { playerColor } = await server.gameStarted()
+            setPlayerColor(playerColor)
           } else {
             // host new room
             const code = await server.createRoom()
             setRoomCode(code)
             await server.opponentPlayer()
+            server.sendStartGame({ fenString: 'temp', playerColor: getOppositeColor(playerColor()), opponentColor: playerColor() })
           }
             setServer(server)
-            setGameInProgress(true)
+            startGame()
+            
             server.onOpponentMove = data => {
               console.log('received a move!', data)
               const piece = board()[data.prevIndex]
               if (isColorToMove(piece) && isLegalMove(data.prevIndex, data.newIndex)) movePiece(data.prevIndex, data.newIndex, piece)
+            }
+            server.onOpponentResign = () => {
+              resign()
             }
         } catch (err) {
           alert('Failed to Connect - No room found at given code!')
@@ -787,6 +798,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
   const returnToMainScreen = async () => {
     setGameMode(SELECTED_GAME_MODE)
     setRoomCode('')
+    server()?.disconnect()
+    setServer(undefined)
   }
 
   const setGameModeToSetup = () => {
@@ -802,7 +815,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     setShowColorSelect(true)
   }
 
-  const startGame = (selectedColor: Piece, mode: Mode = gameMode()) => {
+  const startGame = (selectedColor: Piece = playerColor(), mode: Mode = gameMode()) => {
     resetBoard()
     setMoveStack([])
     setGameMode(mode)

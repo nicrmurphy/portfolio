@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client'
 
 type BoardData = { fenString: string }
+type GameState = { fenString: string, playerColor: number, opponentColor: number }
 type MoveData = { id: number, prevIndex: number, newIndex: number, newFenString: string }
 
 /**
@@ -20,9 +21,11 @@ export class GameServerConnection {
   public isActive = (): boolean => this.socket.active
   public isConnected = (): boolean => this.socket.connected
   public onOpponentMove: (...args: any[]) => void = () => {}
+  public onOpponentResign: (...args: any[]) => void = () => {}
 
   constructor() {
     this.socket.on('move', data => this.onOpponentMove(data))
+    this.socket.on('resign', data => this.onOpponentResign(data))
   }
   
   joinRoom = async (code: string): Promise<string> => {
@@ -52,7 +55,27 @@ export class GameServerConnection {
     })
   }
 
+  gameStarted = async (): Promise<GameState> => {
+    return new Promise((resolve, reject) => {
+      this.socket.on('start', (data: GameState) => {
+        resolve(data)
+      })
+    })
+  }
+
+  sendStartGame = (data: GameState): void => {
+    this.socket.emit('start', data)
+  }
+
   sendMove = (data: MoveData): void => {
     this.socket.emit('move', data)
+  }
+
+  sendResign = (): void => {
+    this.socket.emit('resign')
+  }
+
+  disconnect = (): void => {
+    this.socket.disconnect()
   }
 }
