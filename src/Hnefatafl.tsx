@@ -369,41 +369,6 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     setBoardPositions({ [fen]: 1 })
   }
 
-  const onMouseDown = (event: MouseEvent) => {
-    if (dragEnabled()) {
-      setDragEnabled(false)
-      setHighlightedSquares([])
-      setCursorStyle('Default')
-      updateBoard()
-      return
-    }
-    if (event.button !== 0 || previewOnly) return; // exclude all mouse clicks except for left mouse button (button 0)
-    const target = boardSvgRef as SVGElement
-    setBoardWidthPx(target.clientWidth)
-    const index = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY }, target.clientWidth)
-    const piece = board()[index]
-    if (canMovePiece(piece)) {
-      setMousePosition({ x: event.offsetX, y: event.offsetY })
-      setDraggedIndex(index)
-      setDragEnabled(true)
-      if (gameMode() !== Mode.Setup) highlightLegalMoves(index)
-      setCursorStyle('Grabbing')
-      updateBoard()
-    }
-    else setDragEnabled(false)
-  }
-
-  const onMouseMove = (event: MouseEvent) => {
-    if (dragEnabled()) {
-      setMousePosition({ x: event.offsetX, y: event.offsetY })
-      if (cursorStyle() !== 'Grabbing') setCursorStyle('Grabbing')
-    } else {
-      const index = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY }, (boardSvgRef as SVGElement).clientWidth)
-      const pieceAtIndex = board()[index]
-      setCursorStyle(canMovePiece(pieceAtIndex) ? 'Grab' : 'Default')
-    }
-  }
-
   const isFriendlyPieceAtTarget = (index: number, pieceColor: Piece): boolean => getPieceColor(index) === pieceColor
 
   enum Direction {
@@ -665,6 +630,42 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     }
   }
 
+  //#region mouse listeners
+  const onMouseDown = (event: MouseEvent) => {
+    if (dragEnabled()) {
+      setDragEnabled(false)
+      setHighlightedSquares([])
+      setCursorStyle('Default')
+      updateBoard()
+      return
+    }
+    if (event.button !== 0 || previewOnly) return; // exclude all mouse clicks except for left mouse button (button 0)
+    const target = boardSvgRef as SVGElement
+    setBoardWidthPx(target.clientWidth)
+    const index = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY }, target.clientWidth)
+    const piece = board()[index]
+    if (canMovePiece(piece)) {
+      setMousePosition({ x: event.offsetX, y: event.offsetY })
+      setDraggedIndex(index)
+      setDragEnabled(true)
+      if (gameMode() !== Mode.Setup) highlightLegalMoves(index)
+      setCursorStyle('Grabbing')
+      updateBoard()
+    }
+    else setDragEnabled(false)
+  }
+
+  const onMouseMove = (event: MouseEvent) => {
+    if (dragEnabled()) {
+      setMousePosition({ x: event.offsetX, y: event.offsetY })
+      if (cursorStyle() !== 'Grabbing') setCursorStyle('Grabbing')
+    } else {
+      const index = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY }, (boardSvgRef as SVGElement).clientWidth)
+      const pieceAtIndex = board()[index]
+      setCursorStyle(canMovePiece(pieceAtIndex) ? 'Grab' : 'Default')
+    }
+  }
+
   const onMouseUp = ({ offsetX, offsetY }: MouseEvent) => {
     setHighlightedSquares([])
     // updateBoard()
@@ -687,6 +688,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     }
     else updateBoard()
   }
+  //#endregion mouse listeners
 
   const resetBoard = () => {
     importGameFromFen(DEFAULT_BOARD_FEN)
@@ -828,7 +830,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
 
   return (
     <>
-      <div class={`${styles.BoardWrapper} ${previewOnly ? styles.PreviewBoard : ''} ${styles[cursorStyle()] ?? ''}`}>
+      <div class={`${styles.BoardWrapper} ${previewOnly ? styles.PreviewBoard : styles[cursorStyle()] ?? ''}`}>
         <svg ref={boardSvgRef} class={styles.Board} height={BOARD_SIZE_PX} width={BOARD_SIZE_PX} viewBox={`0 0 ${BW * TW} ${BW * TW}`} onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} oncontextmenu={(e) => e.preventDefault()}>
           <rect width="100%" height="100%" fill={lightSquareFill()} />
           <g>
