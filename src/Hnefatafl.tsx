@@ -1,10 +1,9 @@
 import { Component, createSignal } from "solid-js";
-
 import styles from "./App.module.css";
 import { GameServerConnection, GameState, MoveData } from "./services/api-service";
-
 import { Mode, Piece, Win, WinCondition } from "./constants";
 import GameBoard from "./GameBoard";
+import { pieceMoveAudio } from "./sounds";
 
 /**
  * Short for "Board Width", this value represents the number of tiles/squares in a single
@@ -554,7 +553,10 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
               const { moveData } = data
               console.log('received a move!', moveData)
               const piece = board()[moveData.prevIndex]
-              if (isColorToMove(piece) && isLegalMove(moveData.prevIndex, moveData.newIndex)) movePiece(moveData.prevIndex, moveData.newIndex, piece)
+              if (isColorToMove(piece) && isLegalMove(moveData.prevIndex, moveData.newIndex)) {
+                movePiece(moveData.prevIndex, moveData.newIndex, piece)
+                pieceMoveAudio.play()
+              }
             }
             server.onOpponentResign = () => {
               resign()

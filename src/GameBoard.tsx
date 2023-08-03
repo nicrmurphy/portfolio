@@ -3,8 +3,7 @@ import { Mode, Piece, Win } from "./constants"
 import { Wood as SvgWoodTexture } from "./svg/Textures"
 import svgPieces, { TW } from './svg/Pieces'
 import styles from "./App.module.css";
-import sound from './assets/move-piece.mp3'
-const audio = new Audio(sound)
+import { pieceMoveAudio, pieceCaptureAudio } from "./sounds";
 
 type MousePosition = {
   x: number,
@@ -220,7 +219,7 @@ const GameBoard: Component<GameBoardProps> =
         setGameInProgress(true)
       }
       movePiece(draggedIndex(), index, piece)
-      audio.play()
+      pieceMoveAudio.play()
     }
     else updateBoard()
   }
