@@ -119,6 +119,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
   const [isDraw, setIsDraw] = createSignal<boolean>(cache.isDraw ?? false)
   // other
   const [whiteToMove, setWhiteToMove] = createSignal<boolean>(cache.whiteToMove ?? true)
+  const [highlightedMove, setHighlightedMove] = createSignal<number[]>([])
   
   const [lightSquareFill, setLightSquareFill] = createSignal<string>('#f0d9b5')
   const [darkSquareFill, setDarkSquareFill] = createSignal<string>('#b58863')
@@ -630,6 +631,8 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
       setGameInProgress={setGameInProgress}
       movePiece={movePiece}
       useAltRookSvg={false}
+      highlightedMove={highlightedMove}
+      setHighlightedMove={setHighlightedMove}
       boardTheme={{
         backgroundFill: darkSquareFill(),
         textureFill: darkSquareFill(),

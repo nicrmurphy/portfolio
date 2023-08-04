@@ -113,6 +113,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
 
   const [server, setServer] = createSignal<GameServerConnection>()
 
+  const [highlightedMove, setHighlightedMove] = createSignal<number[]>([])
+
   /** Themes:
    * Default / Tournament:
    * LS: #f0d9b5
@@ -562,6 +564,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
               const piece = board()[moveData.prevIndex]
               if (isColorToMove(piece) && isLegalMove(moveData.prevIndex, moveData.newIndex)) {
                 movePiece(moveData.prevIndex, moveData.newIndex, piece)
+                setHighlightedMove([moveData.prevIndex, moveData.newIndex])
               }
             }
             server.onOpponentResign = () => {
@@ -623,6 +626,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
         gameInProgress={gameInProgress}
         setGameInProgress={setGameInProgress}
         movePiece={movePiece}
+        highlightedMove={highlightedMove}
+        setHighlightedMove={setHighlightedMove}
         useAltRookSvg={true}
         boardTheme={{
           backgroundFill: darkSquareFill(),

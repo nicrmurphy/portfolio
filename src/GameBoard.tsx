@@ -1,4 +1,4 @@
-import { Accessor, Component, For, JSX, Ref, createSignal } from "solid-js"
+import { Accessor, Component, For, JSX, Ref, Setter, createSignal } from "solid-js"
 import { ASCII_CHAR_A, Mode, Piece, Win } from "./constants"
 import { Wood as SvgWoodTexture } from "./svg/Textures"
 import svgPieces, { TW } from './svg/Pieces'
@@ -36,7 +36,9 @@ export type GameBoardProps = {
   gameInProgress: Accessor<boolean>,
   kingSquares?: Accessor<boolean[]>,
   throneIndex?: Accessor<number>,
-  defenderSquares?: Accessor<boolean[]>
+  defenderSquares?: Accessor<boolean[]>,
+  highlightedMove: Accessor<number[]>,
+  setHighlightedMove: Setter<number[]>
  }
 
 const GameBoard: Component<GameBoardProps> =
@@ -60,6 +62,8 @@ const GameBoard: Component<GameBoardProps> =
   kingSquares,
   throneIndex,
   defenderSquares,
+  highlightedMove,
+  setHighlightedMove
 }) => {  
   const [dragPosition, setDragPosition] = createSignal<MousePosition>({ x: 0, y: 0 })
   const [dragEnabled, setDragEnabled] = createSignal<boolean>(false)
@@ -68,7 +72,6 @@ const GameBoard: Component<GameBoardProps> =
   const [showColorSelect, setShowColorSelect] = createSignal<boolean>(false)
   const [cursorStyle, setCursorStyle] = createSignal<'Default' | 'Grab' | 'Grabbing'>('Default')
   const [importedFenString, setImportedFenString] = createSignal<string>('')
-  const [highlightedMove, setHighlightedMove] = createSignal<number[]>([])
   let boardSvgRef: Ref<SVGSVGElement | ((el: SVGSVGElement) => void) | undefined>
 
   //#region board util
