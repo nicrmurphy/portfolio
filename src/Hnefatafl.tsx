@@ -1,9 +1,10 @@
 import { Component, createSignal } from "solid-js";
 import styles from "./App.module.css";
 import { GameServerConnection, GameState, MoveData } from "./services/api-service";
-import { Mode, Piece, Win, WinCondition } from "./constants";
+import { ASCII_CHAR_A, Mode, Piece, Win, WinCondition } from "./constants";
 import GameBoard from "./GameBoard";
-import { pieceMoveAudio } from "./sounds";
+import { pieceCaptureAudio, pieceMoveAudio } from "./sounds";
+import MoveStack from "./MoveStack";
 
 /**
  * Short for "Board Width", this value represents the number of tiles/squares in a single
@@ -135,6 +136,13 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
   const isColorToMove = (piece: Piece) => piece & colorToMove()
 
   const getKingLocation = (): number => kingLocation()[Piece.White]
+
+  const getRankFileFromBoardIndex = (index: number): { file: number, rank: number } => ({ file: index % BW, rank: Math.floor(index / BW) % BW })
+  const getPositionLabelFromBoardIndex = (index: number): string => {
+    const { rank, file } = getRankFileFromBoardIndex(index)
+    return `${String.fromCharCode(ASCII_CHAR_A + file)}${BW - rank}`
+  }
+  const getMoveLabel = (prevIndex: number, newIndex: number): string => `${getPositionLabelFromBoardIndex(prevIndex)} → ${getPositionLabelFromBoardIndex(newIndex)}`
 
   const getColorEncoding = (color: Piece) => color === Piece.White ? 'w' : color === Piece.Black ? 'b' : 'e'
 
@@ -400,13 +408,14 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     return null
   }
   
-  const movePiece = (prevIndex: number, newIndex: number, piece?: number): void => {
+  const movePiece = (prevIndex: number, newIndex: number, piece?: number, playAudio: boolean = true): void => {
     piece ||= board()[prevIndex]
     const newBoard = board().slice()
     newBoard[prevIndex] = Piece.None
     newBoard[newIndex] = piece
     const pieceColor = getPieceColor(piece)
     const pieceType = getPieceType(piece)
+    let audio: HTMLAudioElement = pieceMoveAudio
 
     if (pieceType === Piece.King) setKingLocation(prev => ({ ...prev, [pieceColor]: newIndex }))
 
@@ -425,11 +434,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       const moves = calculateLegalMoves(newBoard, { colorToMove: colorToMove(), kingLocation: kingLocation() })
 
       // add move to move stack and board position history
-      setMoveStack(stack => {
-        // TODO: replace with piece movement
-        stack.push('g5-g7')
-        return stack
-      })
+      setMoveStack(stack => [...stack, getMoveLabel(prevIndex, newIndex)])
       const newFenString = calculateFenString(newBoard, colorToMove())
       setBoardPositions(positions => {
         positions[newFenString] ??= 0
@@ -456,7 +461,9 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
           server()!.sendMove({ gameState: { roomCode: roomCode(), fenString: 'temp', playerColor: 0, opponentColor: 0 }, moveData })
         }
       }
+      if (capturedPieces.length) audio = pieceCaptureAudio
     }
+    if (playAudio) audio.play()
   }
 
   const resetBoard = () => {
@@ -479,7 +486,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       const availableSquares = legalMoves()[colorToMove()][randomPreviousIndex]
       const randomNewIndex = availableSquares[getRandomInt(availableSquares.length)]
 
-      movePiece(randomPreviousIndex, randomNewIndex)
+      movePiece(randomPreviousIndex, randomNewIndex, board()[randomPreviousIndex], false)
     }
   }
 
@@ -555,7 +562,6 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
               const piece = board()[moveData.prevIndex]
               if (isColorToMove(piece) && isLegalMove(moveData.prevIndex, moveData.newIndex)) {
                 movePiece(moveData.prevIndex, moveData.newIndex, piece)
-                pieceMoveAudio.play()
               }
             }
             server.onOpponentResign = () => {
@@ -585,10 +591,6 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     setShowColorSelect(false)
   }
 
-  const setGameModeToComputer = () => {
-    setGameMode(Mode.Computer)
-    setShowColorSelect(true)
-  }
 
   const startGame = (selectedColor: Piece = playerColor(), mode: Mode = gameMode()) => {
     resetBoard()
@@ -633,7 +635,10 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       {
         !previewOnly &&
         <div class={styles.sidebar}>
-          {gameInProgress() && <div class={styles.Row}>{pieceIsWhite(colorToMove()) ? 'White' : pieceIsBlack(colorToMove()) ? 'Black' : 'Any'} to Move</div>}
+          {gameInProgress() && <>
+            <MoveStack moveStack={moveStack} />
+            <div class={styles.Row}>{pieceIsWhite(colorToMove()) ? 'White' : pieceIsBlack(colorToMove()) ? 'Black' : 'Any'} to Move</div>
+          </>}
           {
             !gameInProgress() && <>
               <div class={styles.Row}>{winner() ? `${winner()?.winner === Piece.White ? 'Defenders' : 'Attackers'} win via ${winner()?.condition}!` : ''}</div>
@@ -650,18 +655,15 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
                   <div class={styles.Row}><button onClick={() => setPlayerColor(prev => getOppositeColor(prev))}>Change Player Color</button></div>
                 </> : <>
                   <div class={styles.Row}><button onClick={() => startGame(Piece.Any, Mode.Local)}>Start a Local Match</button></div>
-                  <div class={styles.Row}><button disabled onClick={setGameModeToComputer}>Start a Match Against Computer</button></div>
+                  <div class={styles.Row}>
+                    <button disabled onClick={() => startGame(Piece.White, Mode.Computer)}>Play White Against Computer</button>
+                    <button disabled onClick={() => startGame(Piece.Black, Mode.Computer)}>Play Black Against Computer</button>
+                  </div>
                   <div class={styles.Row}><button onClick={() => setGameModeToOnline()}>Host Online Match</button></div>
                   <div class={styles.Row}><input type="text" placeholder="Enter Room Code" value={roomCode()} onInput={e => setRoomCode(e.target.value)} /><button disabled={!roomCode()} onClick={() => setGameModeToOnline(roomCode())}>Join Online Match</button></div>
                   <div class={styles.Row}><button onClick={setGameModeToSetup}>Setup Custom Board</button></div>
                 </>
               }
-            </>
-          }
-          {
-            showColorSelect() && <>
-              <button onClick={() => startGame(Piece.Black)}>Play as Black</button>
-              <button onClick={() => startGame(Piece.White)}>Play as White</button>
             </>
           }
           {

@@ -115,6 +115,12 @@
   color: rgba(0, 0, 0, 1);
   background-color: white;
   transition: .3s;
+  
+  filter:
+    drop-shadow( 1px  1px 3px rgb(255 255 255 / .3))
+    drop-shadow(-1px  1px 3px rgb(255 255 255 / .3))
+    drop-shadow( 1px -1px 3px rgb(255 255 255 / .3))
+    drop-shadow(-1px -1px 3px rgb(255 255 255 / .3))
 }
 
 a {
@@ -236,7 +242,7 @@ a {
 
 .sidebar {
   margin: 2em;
-  width: 12em;
+  width: 13em;
   font-size: calc(10px + 2vmin);
   color: white;
 
@@ -308,6 +314,26 @@ a {
 .PromotionText {
   fill: white;
   /* font-size: 2em; */
+}
+
+.MoveStackContainer {
+  display: grid;
+  grid-template-columns: .1fr .45fr .45fr;
+  background-color: rgba(0, 0, 0, .1);
+  padding: 5px;
+}
+
+.MoveStackItem {
+  display: grid;
+  font-size: 16px;
+  text-align: left;
+}
+
+.HighlightedMove {
+  background-color: rgba(100, 100, 100, .75);
+  border: 1px solid rgba(100, 100, 100, .75);
+  border-radius: 2px;
+  width: fit-content;
 }
 
 @keyframes logo-spin {

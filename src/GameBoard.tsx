@@ -1,9 +1,8 @@
 import { Accessor, Component, For, JSX, Ref, createSignal } from "solid-js"
-import { Mode, Piece, Win } from "./constants"
+import { ASCII_CHAR_A, Mode, Piece, Win } from "./constants"
 import { Wood as SvgWoodTexture } from "./svg/Textures"
 import svgPieces, { TW } from './svg/Pieces'
 import styles from "./App.module.css";
-import { pieceMoveAudio, pieceCaptureAudio } from "./sounds";
 
 type MousePosition = {
   x: number,
@@ -62,14 +61,17 @@ const GameBoard: Component<GameBoardProps> =
   throneIndex,
   defenderSquares,
 }) => {  
-  const [mousePosition, setMousePosition] = createSignal<MousePosition>({ x: 0, y: 0 })
+  const [dragPosition, setDragPosition] = createSignal<MousePosition>({ x: 0, y: 0 })
   const [dragEnabled, setDragEnabled] = createSignal<boolean>(false)
   const [draggedIndex, setDraggedIndex] = createSignal<number>(-1)
   const [highlightedSquares, setHighlightedSquares] = createSignal<boolean[]>(Array(NUM_BOARD_SQUARES).fill(false))
   const [showColorSelect, setShowColorSelect] = createSignal<boolean>(false)
   const [cursorStyle, setCursorStyle] = createSignal<'Default' | 'Grab' | 'Grabbing'>('Default')
   const [importedFenString, setImportedFenString] = createSignal<string>('')
+  const [highlightedMove, setHighlightedMove] = createSignal<number[]>([])
   let boardSvgRef: Ref<SVGSVGElement | ((el: SVGSVGElement) => void) | undefined>
+
+  //#region board util
 
   /**
    * Short for "Board Width", this value represents the number of tiles/squares in a single
@@ -79,17 +81,24 @@ const GameBoard: Component<GameBoardProps> =
    * An 11x11 board would have a value of "11"
    */
   const BW = Math.sqrt(NUM_BOARD_SQUARES)
-  if (BW !== Math.floor(BW)) throw console.error("Invalid NUM_BOARD_SQUARES provided!");
+  if (BW !== Math.floor(BW)) throw console.error(`Invalid NUM_BOARD_SQUARES value ${NUM_BOARD_SQUARES} provided! This value must be a perfect square.`);
   
   const isColorToMove = (piece: Piece) => piece & colorToMove()
   const isPlayerColor = (piece: Piece) => piece & playerColor()
   const canMovePiece = (piece: Piece) => isColorToMove(piece) && isPlayerColor(piece)
 
-
   const getXPositionFromBoardIndex = (index: number): number => ((index % BW) * TW)
   const getYPositionFromBoardIndex = (index: number): number => ((Math.floor(index / BW) % BW) * TW)
   const getBoardIndexFromRankFile = (rank: number, file: number): number => file + (rank * BW)
-  
+  const getRankFileFromBoardIndex = (index: number): { file: number, rank: number } => ({ file: index % BW, rank: Math.floor(index / BW) % BW })
+  const getPositionLabelFromBoardIndex = (index: number): string => {
+    const { rank, file } = getRankFileFromBoardIndex(index)
+    return `${String.fromCharCode(ASCII_CHAR_A + file)}${BW - rank}`
+  }
+  const getMoveLabel = (prevIndex: number, newIndex: number): string => `${getPositionLabelFromBoardIndex(prevIndex)} → ${getPositionLabelFromBoardIndex(newIndex)}`
+
+  //#endregion board util
+
   const getBoardIndexFromMousePosition = (pos: MousePosition, boardWidthPx: number): number => {
     const x = pos.x
     const y = pos.y
@@ -121,6 +130,7 @@ const GameBoard: Component<GameBoardProps> =
   const BlackQueen = (index: number, pos?: MousePosition) => PiecePlacer(index, svgPieces.BlackQueen(), pos)
   //#endregion svg pieces
   
+  //#region piece util
   const getPieceType = (piece: Piece): Piece => piece & 7
   const getPieceColor = (piece: Piece): Piece => piece & 24
   
@@ -156,6 +166,7 @@ const GameBoard: Component<GameBoardProps> =
       else return BlackKing(index, pos)
     }
   }
+  //#endregion piece util
 
   const highlightLegalMoves = (index: number): void => {
     const moves = legalMoves()[colorToMove()][index]
@@ -165,21 +176,20 @@ const GameBoard: Component<GameBoardProps> =
     }))
   }
 
-  //#region mouse listeners
-  const onMouseDown = (event: MouseEvent) => {
-    if (dragEnabled()) {
-      setDragEnabled(false)
-      setHighlightedSquares([])
-      setCursorStyle('Default')
-      updateBoard()
-      return
-    }
-    if (event.button !== 0 || previewOnly) return; // exclude all mouse clicks except for left mouse button (button 0)
+  //#region mouse & touch listeners
+  const resetDragInteraction = () => {
+    setDragEnabled(false)
+    setHighlightedSquares([])
+    setCursorStyle('Default')
+    updateBoard()
+  }
+
+  const startDrag = (pos: MousePosition) => {
     const target = boardSvgRef as SVGElement
-    const index = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY }, target.clientWidth)
+    const index = getBoardIndexFromMousePosition(pos, target.clientWidth)
     const piece = board()[index]
     if (canMovePiece(piece)) {
-      setMousePosition({ x: event.offsetX, y: event.offsetY })
+      setDragPosition(pos)
       setDraggedIndex(index)
       setDragEnabled(true)
       if (gameMode() !== Mode.Setup) highlightLegalMoves(index)
@@ -189,24 +199,24 @@ const GameBoard: Component<GameBoardProps> =
     else setDragEnabled(false)
   }
 
-  const onMouseMove = (event: MouseEvent) => {
+  const dragPiece = (pos: MousePosition) => {
     if (dragEnabled()) {
-      setMousePosition({ x: event.offsetX, y: event.offsetY })
+      setDragPosition(pos)
       if (cursorStyle() !== 'Grabbing') setCursorStyle('Grabbing')
     } else {
-      const index = getBoardIndexFromMousePosition({ x: event.offsetX, y: event.offsetY }, (boardSvgRef as SVGElement).clientWidth)
+      const index = getBoardIndexFromMousePosition(pos, (boardSvgRef as SVGElement).clientWidth)
       const pieceAtIndex = board()[index]
       setCursorStyle(canMovePiece(pieceAtIndex) ? 'Grab' : 'Default')
     }
   }
 
-  const onMouseUp = ({ offsetX, offsetY }: MouseEvent) => {
+  const stopDrag = (pos: MousePosition) => {
     setHighlightedSquares([])
     // updateBoard()
     if (!dragEnabled()) return
     setDragEnabled(false)
 
-    const index = getBoardIndexFromMousePosition({ x: offsetX, y: offsetY }, (boardSvgRef as SVGElement).clientWidth)
+    const index = getBoardIndexFromMousePosition(pos, (boardSvgRef as SVGElement).clientWidth)
     const piece = board()[draggedIndex()]
     const legalMove = gameMode() === Mode.Setup || isLegalMove(draggedIndex(), index)
 
@@ -219,18 +229,70 @@ const GameBoard: Component<GameBoardProps> =
         setGameInProgress(true)
       }
       movePiece(draggedIndex(), index, piece)
-      pieceMoveAudio.play()
+      const moveLabel = getMoveLabel(draggedIndex(), index)
+      setHighlightedMove([draggedIndex(), index])
     }
     else updateBoard()
   }
-  //#endregion mouse listeners
+  
+  const onMouseDown = (event: MouseEvent) => {
+    if (dragEnabled()) {
+      resetDragInteraction()
+      return
+    }
+    if (event.button !== 0 || previewOnly) return; // exclude all mouse clicks except for left mouse button (button 0)
+    startDrag({ x: event.offsetX, y: event.offsetY })
+  }
+
+  const onMouseMove = (event: MouseEvent) => {
+    dragPiece({ x: event.offsetX, y: event.offsetY })
+  }
+
+  const onMouseUp = ({ offsetX, offsetY }: MouseEvent) => {
+    stopDrag({ x: offsetX, y: offsetY })
+  }
+
+  const onTouchStart = (event: TouchEvent) => {
+    // TODO: Touch controls not working as expected
+    if (dragEnabled()) {
+      resetDragInteraction()
+      return
+    }
+    const touch = event.touches[0]
+    startDrag({ x: touch.clientX, y: touch.clientY })
+
+  }
+
+  const onTouchMove = (event: TouchEvent) => {
+    // TODO: Touch controls not working as expected
+    const touch = event.touches[0]
+    dragPiece({ x: touch.clientX, y: touch.clientY })
+  }
+
+  const onTouchEnd = (event: TouchEvent) => {
+    // TODO: Touch controls not working as expected
+    const touch = event.changedTouches[0]
+    stopDrag({ x: touch.clientX, y: touch.clientY })
+  }
+
+  const onTouchCancel = (event: TouchEvent) => {
+    // TODO: Touch controls not working as expected
+    setDragEnabled(false)
+  }
+  //#endregion mouse & touch listeners
   
   const boardIndices = new Array(BW).fill(undefined).map((_, i) => i)
   const evenBoardIndices = boardIndices.filter(i => i % 2 === 0)
-  console.log(evenBoardIndices)
 
   return <div class={`${styles.BoardWrapper} ${previewOnly ? styles.PreviewBoard : styles[cursorStyle()] ?? ''}`}>
-  <svg ref={boardSvgRef} class={styles.Board} height={BOARD_SIZE_PX} width={BOARD_SIZE_PX} viewBox={`0 0 ${BW * TW} ${BW * TW}`} onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} oncontextmenu={(e) => e.preventDefault()}>
+  <svg
+    // svg properties
+    ref={boardSvgRef} class={styles.Board} height={BOARD_SIZE_PX} width={BOARD_SIZE_PX} viewBox={`0 0 ${BW * TW} ${BW * TW}`}
+    // mouse events
+    onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} oncontextmenu={(e) => e.preventDefault()}
+    // touch events
+    onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}
+  >
     <rect width="100%" height="100%" fill={boardTheme.backgroundFill} />
     <g>
       <SvgWoodTexture fill={boardTheme.textureFill} />
@@ -238,9 +300,10 @@ const GameBoard: Component<GameBoardProps> =
     <For each={boardIndices}>{(y) => 
       <For each={boardIndices}>{(x) => <>
         {evenBoardIndices.includes(x) && <rect fill={boardTheme.checkerPatternFill} fill-opacity={boardTheme.checkerPatternOpacity} stroke="#787272" stroke-width=".25" stroke-opacity=".75" x={`${TW * (x + (y % 2))}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />}
-        {highlightedSquares()[getBoardIndexFromRankFile(y, x)] && <rect  fill="lightblue" opacity=".25" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />}
+        {highlightedSquares()[getBoardIndexFromRankFile(y, x)] && <rect fill="lightblue" opacity=".25" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />}
         {(defenderSquares && defenderSquares()[getBoardIndexFromRankFile(y, x)]) && <rect fill="brown" opacity=".05" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />}
         {(kingSquares && (kingSquares()[getBoardIndexFromRankFile(y, x)] || (throneIndex && getBoardIndexFromRankFile(y, x) === throneIndex()))) && <rect class={styles.KingSquare} fill={boardTheme.specialTileFill} opacity=".5" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />}
+        {highlightedMove().includes(getBoardIndexFromRankFile(y, x)) && <rect fill="goldenrod" opacity=".25" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />}
         {/* {props.highlightThreats && threatenedSquares()[getOppositeColor(colorToMove())][getBoardIndexFromRankFile(y, x)] && <rect fill="red" opacity=".5" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />} */}
         {/* {highlightedLinesOfCheckSquares()[getBoardIndexFromRankFile(y, x)] && <rect fill="yellow" opacity=".5" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />} */}
       </>
@@ -251,7 +314,7 @@ const GameBoard: Component<GameBoardProps> =
       if (!dragEnabled() || i() !== draggedIndex()) return renderPiece(piece, i())
     }}</For>
 
-    {dragEnabled() && renderPiece(board()[draggedIndex()], draggedIndex(), { x: (mousePosition().x / ((boardSvgRef as SVGElement).clientWidth / (BW * TW))) - (TW / 2), y: (mousePosition().y / ((boardSvgRef as SVGElement).clientWidth / (BW * TW))) - (TW / 2) })}
+    {dragEnabled() && renderPiece(board()[draggedIndex()], draggedIndex(), { x: (dragPosition().x / ((boardSvgRef as SVGElement).clientWidth / (BW * TW))) - (TW / 2), y: (dragPosition().y / ((boardSvgRef as SVGElement).clientWidth / (BW * TW))) - (TW / 2) })}
     {/* {displayPromotionDialog() && <>
       <rect width="100%" height="100%" fill="#1f1f1f" opacity={.75} />
       <For each={[Piece.Queen, Piece.Knight, Piece.Rook, Piece.Bishop]}>{(piece, i) => <>

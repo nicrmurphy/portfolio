@@ -47,3 +47,5 @@ export class Win {
     this.condition = condition
   }
 }
+
+export const ASCII_CHAR_A = 65  // ascii code for character 'A'
