@@ -637,7 +637,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
             });
           }
           setServer(server);
-          startGame();
+          startGame(playerColor(), gameMode(), true);
 
           server.onOpponentMove = (data: { gameState: GameState; moveData: MoveData }) => {
             const { moveData } = data;
@@ -771,13 +771,13 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
               ) : (
                 <>
                   <div class={styles.Row}>
-                    <button onClick={() => startGame(Piece.Any, Mode.Local)}>Start a Local Match</button>
+                    <button onClick={() => startGame(Piece.Any, Mode.Local, true)}>Start a Local Match</button>
                   </div>
                   <div class={styles.Row}>
-                    <button disabled onClick={() => startGame(Piece.White, Mode.Computer)}>
+                    <button disabled onClick={() => startGame(Piece.White, Mode.Computer, true)}>
                       Play White Against Computer
                     </button>
-                    <button disabled onClick={() => startGame(Piece.Black, Mode.Computer)}>
+                    <button disabled onClick={() => startGame(Piece.Black, Mode.Computer, true)}>
                       Play Black Against Computer
                     </button>
                   </div>
