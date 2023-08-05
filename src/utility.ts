@@ -1,4 +1,4 @@
-export const isTouchEnabled = (): boolean => {
+export function isTouchEnabled(): boolean {
   let hasTouchScreen = false;
   if ("maxTouchPoints" in navigator) {
     hasTouchScreen = navigator.maxTouchPoints > 0;
@@ -20,4 +20,8 @@ export const isTouchEnabled = (): boolean => {
   }
 
   return hasTouchScreen;
-};
+}
+
+export function getRandomInt(max: number): number {
+  return Math.floor(Math.random() * max);
+}

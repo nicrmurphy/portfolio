@@ -32,6 +32,7 @@ export type GameBoardProps = {
   colorToMove: Accessor<Piece>;
   playerColor: Accessor<Piece>;
   gameMode: Accessor<Mode>;
+  getNextComputerMove: () => Promise<{ prevIndex: number; newIndex: number }>;
   legalMoves: Accessor<{ [key: number]: number[][] }>;
   winner: Accessor<Win | null>;
   gameInProgress: Accessor<boolean>;
@@ -58,6 +59,7 @@ const GameBoard: Component<GameBoardProps> = ({
   colorToMove,
   playerColor,
   gameMode,
+  getNextComputerMove,
   legalMoves,
   winner,
   gameInProgress,
@@ -227,7 +229,7 @@ const GameBoard: Component<GameBoardProps> = ({
     }
   };
 
-  const stopDrag = (pos: MousePosition) => {
+  const stopDrag = async (pos: MousePosition) => {
     setHighlightedSquares([]);
     // updateBoard()
     if (!dragEnabled()) return;
@@ -246,6 +248,11 @@ const GameBoard: Component<GameBoardProps> = ({
         setGameInProgress(true);
       }
       movePiece(draggedIndex(), index, piece);
+
+      if (!winner() && gameInProgress() && gameMode() === Mode.Computer) {
+        const move = await getNextComputerMove();
+        movePiece(move.prevIndex, move.newIndex);
+      }
     } else updateBoard();
   };
 

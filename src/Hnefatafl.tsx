@@ -7,6 +7,7 @@ import { GameServerConnection, GameState, MoveData } from "./services/api-servic
 import pieceMoveSFX from "./assets/sounds/piece-move.mp3";
 import pieceCaptureSFX from "./assets/sounds/piece-capture.mp3";
 import gameStartSFX from "./assets/sounds/game-start.mp3";
+import { getRandomInt } from "./utility";
 
 /**
  * Short for "Board Width", this value represents the number of tiles/squares in a single
@@ -546,10 +547,6 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     if (gameMode() === Mode.Setup) setColorToMove(Piece.Any);
   };
 
-  function getRandomInt(max: number): number {
-    return Math.floor(Math.random() * max);
-  }
-
   const makeRandomMove = () => {
     const availableMoves: number[] = [];
     const numMoves = legalMoves()[colorToMove()].reduce((nMoves, move, index) => {
@@ -598,15 +595,32 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
   };
   const resign = () => {
     if (gameInProgress()) {
-      setWinner(new Win(getOppositeColor(colorToMove()), WinCondition.Resign));
-      setColorToMove(Piece.None);
-      setGameInProgress(false);
-      new Audio(gameStartSFX).play();
       if (gameMode() === Mode.Online && server()?.isActive()) {
         server()?.sendResign({ roomCode: roomCode(), fenString: "temp", playerColor: 0, opponentColor: 0 });
         returnToMainScreen();
       }
+      setWinner(new Win(getOppositeColor(colorToMove()), WinCondition.Resign));
+      setColorToMove(Piece.None);
+      setGameInProgress(false);
+      new Audio(gameStartSFX).play();
     }
+  };
+
+  const getNextComputerMove = async (): Promise<{ prevIndex: number; newIndex: number }> => {
+    // evaluate position
+
+    // find best move
+
+    // choose random move
+    const availableMoves: number[] = [];
+    legalMoves()[colorToMove()].forEach((move, index) => {
+      if (move.length) availableMoves.push(index);
+    });
+
+    const randomPreviousIndex = availableMoves[getRandomInt(availableMoves.length)];
+    const availableSquares = legalMoves()[colorToMove()][randomPreviousIndex];
+    const randomNewIndex = availableSquares[getRandomInt(availableSquares.length)];
+    return { prevIndex: randomPreviousIndex, newIndex: randomNewIndex };
   };
 
   const setGameModeToOnline = async (roomCode?: string) => {
@@ -637,7 +651,6 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
             });
           }
           setServer(server);
-          startGame(playerColor(), gameMode(), true);
 
           server.onOpponentMove = (data: { gameState: GameState; moveData: MoveData }) => {
             const { moveData } = data;
@@ -652,9 +665,12 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
               movePiece(moveData.prevIndex, moveData.newIndex, piece);
             }
           };
+
           server.onOpponentResign = () => {
             resign();
           };
+
+          startGame(playerColor(), gameMode(), true);
         } catch (err) {
           alert("Failed to Connect - No room found at given code!");
           console.error(err);
@@ -690,6 +706,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     setWinner(null);
     setGameInProgress(true);
     if (playSound) new Audio(gameStartSFX).play();
+
+    if (mode === Mode.Computer && playerColor() !== colorToMove()) makeRandomMove();
   };
 
   return (
@@ -707,6 +725,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
         throneIndex={throneIndex}
         defenderSquares={defenderSquares}
         gameMode={gameMode}
+        getNextComputerMove={getNextComputerMove}
         legalMoves={legalMoves}
         isLegalMove={isLegalMove}
         winner={winner}
@@ -774,12 +793,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
                     <button onClick={() => startGame(Piece.Any, Mode.Local, true)}>Start a Local Match</button>
                   </div>
                   <div class={styles.Row}>
-                    <button disabled onClick={() => startGame(Piece.White, Mode.Computer, true)}>
-                      Play White Against Computer
-                    </button>
-                    <button disabled onClick={() => startGame(Piece.Black, Mode.Computer, true)}>
-                      Play Black Against Computer
-                    </button>
+                    <button onClick={() => startGame(Piece.Black, Mode.Computer, true)}>Play Black Against Computer</button>
+                    <button onClick={() => startGame(Piece.White, Mode.Computer, true)}>Play White Against Computer</button>
                   </div>
                   <div class={styles.Row}>
                     <button onClick={() => setGameModeToOnline()}>Host Online Match</button>
