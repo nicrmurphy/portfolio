@@ -705,6 +705,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     setColorToMove(Piece.Black);
     setWinner(null);
     setGameInProgress(true);
+    setPastBoardPosition(false);
     if (playSound) new Audio(gameStartSFX).play();
 
     if (mode === Mode.Computer && playerColor() !== colorToMove()) makeRandomMove();
