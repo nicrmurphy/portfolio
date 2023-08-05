@@ -25,10 +25,38 @@ export type MousePosition = {
   y: number
 }
 
+export class Move {
+  prevIndex: number
+  newIndex: number
+  label: string
+  fenString: string
+  id: number
+  piece?: Piece
+  capturedIndexes?: number[]
+
+  constructor(moveData: {
+    prevIndex: number
+    newIndex: number
+    label: string
+    fenString: string
+    id: number
+    piece?: Piece
+    capturedIndexes?: number[]
+  }) {
+    this.prevIndex = moveData.prevIndex
+    this.newIndex = moveData.newIndex
+    this.label = moveData.label
+    this.fenString = moveData.fenString
+    this.piece = moveData.piece
+    this.id = moveData.id
+    this.capturedIndexes = moveData.capturedIndexes
+  }
+}
+
 export enum WinCondition {
   Escape = 'Corner Escape',
   Fort = 'Exit Fort',
-  Capture = 'King Captured',
+  Capture = 'King Capture',
   Moves = 'No Legal Moves',
   Surround = 'Surrounding All Defenders',
   Perpetual = 'Repeating Board Position Three Times',

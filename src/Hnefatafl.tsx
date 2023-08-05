@@ -1,10 +1,12 @@
 import { Component, createSignal } from "solid-js";
 import styles from "./App.module.css";
-import { GameServerConnection, GameState, MoveData } from "./services/api-service";
-import { ASCII_CHAR_A, Mode, Piece, Win, WinCondition } from "./constants";
 import GameBoard from "./GameBoard";
-import { pieceCaptureAudio, pieceMoveAudio } from "./sounds";
 import MoveStack from "./MoveStack";
+import { ASCII_CHAR_A, Mode, Move, Piece, Win, WinCondition } from "./constants";
+import { GameServerConnection, GameState, MoveData } from "./services/api-service";
+import pieceMoveSFX from './assets/sounds/piece-move.mp3'
+import pieceCaptureSFX from './assets/sounds/piece-capture.mp3'
+import gameStartSFX from './assets/sounds/game-start.mp3'
 
 /**
  * Short for "Board Width", this value represents the number of tiles/squares in a single
@@ -81,11 +83,12 @@ const getOppositeColor = (color: Piece): Piece.White | Piece.Black => getPieceCo
 const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({ BOARD_SIZE_PX, previewOnly }) => {  
   // game logic (shared)
   const [board, setBoard] = createSignal<number[]>(Array(NUM_BOARD_SQUARES).fill(0))
+  const [pastBoardPosition, setPastBoardPosition] = createSignal<boolean>(false)
   const [colorToMove, setColorToMove] = createSignal<Piece>(Piece.Any)
   const [playerColor, setPlayerColor] = createSignal<Piece>(Piece.Any)
   const [legalMoves, setLegalMoves] = createSignal<{ [key: number]: number[][] }>({ [Piece.White]: Array(NUM_BOARD_SQUARES).fill([]), [Piece.Black]: Array(NUM_BOARD_SQUARES).fill([]) })
   const [winner, setWinner] = createSignal<Win | null>(null)
-  const [moveStack, setMoveStack] = createSignal<string[]>([])
+  const [moveStack, setMoveStack] = createSignal<Move[]>([])
   const [kingLocation, setKingLocation] = createSignal<{ [key: number]: number }>({ [Piece.Black]: 4, [Piece.White]: 60 })
   const [gameMode, setGameMode] = createSignal<Mode>(SELECTED_GAME_MODE)
   const [roomCode, setRoomCode] = createSignal<string>('')
@@ -113,7 +116,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
 
   const [server, setServer] = createSignal<GameServerConnection>()
 
-  const [highlightedMove, setHighlightedMove] = createSignal<number[]>([])
+  const [highlightedMove, setHighlightedMove] = createSignal<Move>(new Move({ prevIndex: -1, newIndex: -1, label: '', fenString: '', id: -1 }))
 
   /** Themes:
    * Default / Tournament:
@@ -184,18 +187,18 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     return 0
   }
 
-  const importGameFromFen = (fen: string): void => {
+  const getBoardFromFen = (fen: string): number[] => {
     // TODO: replace logic with bitboards
     let pieceStr = ''
     let countStr = ''
     let boardIndex = -1
-    const newBoard: number[] = Array(NUM_BOARD_SQUARES).fill(0)
+    const board: number[] = Array(NUM_BOARD_SQUARES).fill(0)
     for (let index = 0; index < fen.length; index++) {
       const char = fen[index]
       if (isNaN(Number(char))) {
         const count = Number(countStr) || 1
         const piece = getPieceFromFenChar(pieceStr)
-        for (let i = 0; i < count; i++) newBoard[boardIndex + i] = piece
+        for (let i = 0; i < count; i++) board[boardIndex + i] = piece
         boardIndex += count
         countStr = ''
         pieceStr = char
@@ -203,6 +206,12 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
         countStr += char
       }
     }
+
+    return board
+  }
+
+  const importGameFromFen = (fen: string): void => {
+    const newBoard = getBoardFromFen(fen)
 
     setColorToMove(gameMode() === Mode.Setup ? Piece.Any : (getPieceColor(getPieceFromFenChar(fen.at(-1) ?? '')) || 1))
 
@@ -410,21 +419,22 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     return null
   }
   
-  const movePiece = (prevIndex: number, newIndex: number, piece?: number, playAudio: boolean = true): void => {
+  const movePiece = (prevIndex: number, newIndex: number, piece?: number, playAudio: boolean = true): string => {
     piece ||= board()[prevIndex]
     const newBoard = board().slice()
     newBoard[prevIndex] = Piece.None
     newBoard[newIndex] = piece
     const pieceColor = getPieceColor(piece)
     const pieceType = getPieceType(piece)
-    let audio: HTMLAudioElement = pieceMoveAudio
+    let audio = new Audio(pieceMoveSFX)
+    let fenString: string = ''
 
     if (pieceType === Piece.King) setKingLocation(prev => ({ ...prev, [pieceColor]: newIndex }))
 
     if (gameMode() === Mode.Setup) {
       setColorToMove(Piece.Any)
-      const fen = calculateFenString(newBoard, Piece.Any)
-      updateBoard(newBoard, true, fen)
+      fenString = calculateFenString(newBoard, Piece.Any)
+      updateBoard(newBoard, true, fenString)
     }
     else {
       setColorToMove(prevColor => getOppositeColor(prevColor))
@@ -436,36 +446,49 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       const moves = calculateLegalMoves(newBoard, { colorToMove: colorToMove(), kingLocation: kingLocation() })
 
       // add move to move stack and board position history
-      setMoveStack(stack => [...stack, getMoveLabel(prevIndex, newIndex)])
-      const newFenString = calculateFenString(newBoard, colorToMove())
+      fenString = calculateFenString(newBoard, colorToMove())
+      const move = new Move({
+        prevIndex,
+        newIndex,
+        label: getMoveLabel(prevIndex, newIndex),
+        fenString,
+        piece,
+        id: moveStack().length,
+        capturedIndexes: capturedPieces.map(({ target }) => target)
+      })
+      setPastBoardPosition(false)
+      setHighlightedMove(move)
+      setMoveStack(stack => [...stack, move])
       setBoardPositions(positions => {
-        positions[newFenString] ??= 0
-        positions[newFenString]++
+        positions[fenString] ??= 0
+        positions[fenString]++
         return positions
       })
 
       // check win conditions
-      const win = checkWinConditions(newBoard, moves, newFenString)
+      const win = checkWinConditions(newBoard, moves, fenString)
       if (win) {
         setWinner(win)
         setColorToMove(Piece.None)
         setGameInProgress(false)
+        new Audio(gameStartSFX).play()
       }
       else setLegalMoves(moves)
 
-      updateBoard(newBoard, true, newFenString)
+      updateBoard(newBoard, true, fenString)
 
       if (gameMode() === Mode.Online) {
         // TODO: handle disconnected
         if (server()?.isActive()) {
-          const moveData = { id: 1, prevIndex, newIndex, newFenString }
+          const moveData = { id: 1, prevIndex, newIndex, fenString }
           console.log('sending move to server', moveData)
-          server()!.sendMove({ gameState: { roomCode: roomCode(), fenString: 'temp', playerColor: 0, opponentColor: 0 }, moveData })
+          server()!.sendMove({ gameState: { roomCode: roomCode(), fenString, playerColor: 0, opponentColor: 0 }, moveData })
         }
       }
-      if (capturedPieces.length) audio = pieceCaptureAudio
+      if (capturedPieces.length) audio = new Audio(pieceCaptureSFX)
     }
     if (playAudio) audio.play()
+    return fenString
   }
 
   const resetBoard = () => {
@@ -526,6 +549,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
       setWinner(new Win(getOppositeColor(colorToMove()), WinCondition.Resign))
       setColorToMove(Piece.None)
       setGameInProgress(false)
+      new Audio(gameStartSFX).play()
       if (gameMode() === Mode.Online && server()?.isActive()) {
         server()?.sendResign({ roomCode: roomCode(), fenString: 'temp', playerColor: 0, opponentColor: 0 })
         returnToMainScreen()
@@ -562,9 +586,13 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
               const { moveData } = data
               console.log('received a move!', moveData)
               const piece = board()[moveData.prevIndex]
+              // TODO: validate your fen board against opponent's
               if (isColorToMove(piece) && isLegalMove(moveData.prevIndex, moveData.newIndex)) {
+                if (pastBoardPosition()) {
+                  setPastBoardPosition(false)
+                  setBoard(getBoardFromFen(moveStack().at(-1)!.fenString))
+                }
                 movePiece(moveData.prevIndex, moveData.newIndex, piece)
-                setHighlightedMove([moveData.prevIndex, moveData.newIndex])
               }
             }
             server.onOpponentResign = () => {
@@ -595,7 +623,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
   }
 
 
-  const startGame = (selectedColor: Piece = playerColor(), mode: Mode = gameMode()) => {
+  const startGame = (selectedColor: Piece = playerColor(), mode: Mode = gameMode(), playSound: boolean = false) => {
     resetBoard()
     setMoveStack([])
     setGameMode(mode)
@@ -604,6 +632,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
     setColorToMove(Piece.Black)
     setWinner(null)
     setGameInProgress(true)
+    if (playSound) new Audio(gameStartSFX).play()
   }
 
   return (
@@ -614,6 +643,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
         previewOnly={previewOnly}
         updateBoard={updateBoard}
         board={board}
+        pastBoardPosition={pastBoardPosition}
         colorToMove={colorToMove}
         playerColor={playerColor}
         kingSquares={kingSquares}
@@ -624,6 +654,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
         isLegalMove={isLegalMove}
         winner={winner}
         gameInProgress={gameInProgress}
+        moveStack={moveStack}
         setGameInProgress={setGameInProgress}
         movePiece={movePiece}
         highlightedMove={highlightedMove}
@@ -641,7 +672,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number, previewOnly: boolean }> = ({
         !previewOnly &&
         <div class={styles.sidebar}>
           {gameInProgress() && <>
-            <MoveStack moveStack={moveStack} />
+            <MoveStack moveStack={moveStack} highlightedMove={highlightedMove} setHighlightedMove={setHighlightedMove} setPastBoardPosition={setPastBoardPosition} getBoardFromFen={getBoardFromFen} updateBoard={updateBoard} startingBoardFen={DEFAULT_BOARD_FEN} />
             <div class={styles.Row}>{pieceIsWhite(colorToMove()) ? 'White' : pieceIsBlack(colorToMove()) ? 'Black' : 'Any'} to Move</div>
           </>}
           {

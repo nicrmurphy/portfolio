@@ -1,7 +1,7 @@
 import { Component, createEffect, createSignal, on } from "solid-js";
 import styles from "./App.module.css";
 import GameBoard from "./GameBoard";
-import { Mode, MousePosition, Piece, Win } from "./constants";
+import { Mode, MousePosition, Move, Piece, Win } from "./constants";
 
 const TW = 45 // TILE_WIDTH -> don't change this unless all pieces SVG updated
 
@@ -84,7 +84,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
     enPassantSquare: number,
     kingMoved: { [key: number]: boolean },
     rookMoved: { [key: number]: boolean },
-    moveStack: string[],
+    moveStack: Move[],
     isDraw: boolean,
     hoverFriendlyPiece: boolean
   } = previewOnly ? {} : JSON.parse(localStorage.getItem('chess') || '{}')
@@ -99,7 +99,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
   const [mousePosition, setMousePosition] = createSignal<MousePosition>(cache.mousePosition ?? { x: 0, y: 0 })
   const [colorToMove, setColorToMove] = createSignal<Piece>(cache.colorToMove ?? Piece.White)
   const [legalMoves, setLegalMoves] = createSignal<{ [key: number]: number[][] }>(cache.legalMoves ?? { [Piece.White]: Array(64).fill([]), [Piece.Black]: Array(64).fill([]) })
-  const [moveStack, setMoveStack] = createSignal<string[]>(cache.moveStack ?? [])
+  const [moveStack, setMoveStack] = createSignal<Move[]>(cache.moveStack ?? [])
   const [kingLocation, setKingLocation] = createSignal<{ [key: number]: number }>(cache.kingLocation ?? { [Piece.Black]: 4, [Piece.White]: 60 })
   const [gameMode, setGameMode] = createSignal<Mode>(Mode.Local)
   const [winner, setWinner] = createSignal<Win | null>(null)
@@ -119,7 +119,8 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
   const [isDraw, setIsDraw] = createSignal<boolean>(cache.isDraw ?? false)
   // other
   const [whiteToMove, setWhiteToMove] = createSignal<boolean>(cache.whiteToMove ?? true)
-  const [highlightedMove, setHighlightedMove] = createSignal<number[]>([])
+  const [highlightedMove, setHighlightedMove] = createSignal<Move>(new Move({ prevIndex: -1, newIndex: -1, label: '', fenString: '', id: -1 }))
+  const [pastBoardPosition, setPastBoardPosition] = createSignal<boolean>(false)
   
   const [lightSquareFill, setLightSquareFill] = createSignal<string>('#f0d9b5')
   const [darkSquareFill, setDarkSquareFill] = createSignal<string>('#b58863')
@@ -221,7 +222,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
     if (!moves[pieceColor].length) setCheckmate(true)
 
     // check for draw due to repeated moves
-    setMoveStack(stack => [...stack, getMoveString(pieceType, prevIndex, newIndex)])
+    setMoveStack(stack => [...stack, new Move({ prevIndex, newIndex, label: getMoveString(pieceType, prevIndex, newIndex), fenString: 'temp', piece, id: moveStack()?.length })])
     if (moveStack().length > 7) {
       let isDraw = true
       for (let i = 0; i < 4; i++) {
@@ -621,6 +622,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
       previewOnly={previewOnly ?? false}
       updateBoard={updateBoard}
       board={board}
+      pastBoardPosition={pastBoardPosition}
       colorToMove={colorToMove}
       playerColor={colorToMove} // TODO: ❎ DO NOT FORGET TO CHANGE THIS OR YOU WILL HATE YOURSELF LATER❗❗❗
       gameMode={gameMode}
@@ -628,6 +630,7 @@ const Chess: Component<{ BOARD_SIZE_PX: number, previewOnly?: boolean, highlight
       isLegalMove={isLegalMove}
       winner={winner}
       gameInProgress={gameInProgress}
+      moveStack={moveStack}
       setGameInProgress={setGameInProgress}
       movePiece={movePiece}
       useAltRookSvg={false}

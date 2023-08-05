@@ -2,7 +2,7 @@ import { io } from 'socket.io-client'
 
 type BoardData = { fenString: string }
 export type GameState = { roomCode: string, fenString: string, playerColor: number, opponentColor: number }
-export type MoveData = { id: number, prevIndex: number, newIndex: number, newFenString: string }
+export type MoveData = { id: number, prevIndex: number, newIndex: number, fenString: string }
 
 /**
  * 
