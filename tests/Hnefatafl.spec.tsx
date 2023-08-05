@@ -1,12 +1,11 @@
+import { render } from "@solidjs/testing-library";
+import Hnefatafl from "../src/Hnefatafl";
+import { describe, expect, it } from "vitest";
 
-import { render } from '@solidjs/testing-library';
-import Hnefatafl from '../src/Hnefatafl';
-import { describe, expect, it } from 'vitest';
+describe("Hnefatafl", () => {
+  it("should work", () => {
+    const h = <Hnefatafl BOARD_SIZE_PX={800} previewOnly={false} />;
 
-describe('Hnefatafl', () => {
-  it('should work', () => {
-    const h = <Hnefatafl BOARD_SIZE_PX={800} previewOnly={false} />
-    
-    expect(1 + 1).toBe(2)
-  })
-}); 
+    expect(1 + 1).toBe(2);
+  });
+});

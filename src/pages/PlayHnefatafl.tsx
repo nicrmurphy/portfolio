@@ -1,7 +1,4 @@
-import { Component, For, JSX, createSignal } from "solid-js";
-
 import styles from "../App.module.css";
-import Chess from "../Chess";
 import Hnefatafl from "../Hnefatafl";
 import { BackgroundCircles } from "../BackgroundCircles";
 
@@ -12,7 +9,8 @@ function PlayHnefatafl() {
         <Hnefatafl BOARD_SIZE_PX={800} previewOnly={false} />
       </div>
       <BackgroundCircles />
-    </div> )
+    </div>
+  );
 }
 
-export default PlayHnefatafl
+export default PlayHnefatafl;

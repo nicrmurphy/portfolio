@@ -15,11 +15,9 @@ export const isTouchEnabled = (): boolean => {
       // Only as a last resort, fall back to user agent sniffing
       //@ts-ignore
       const UA = navigator.userAgent;
-      hasTouchScreen =
-        /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) ||
-        /\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
+      hasTouchScreen = /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) || /\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
     }
   }
-  
+
   return hasTouchScreen;
-}
+};
