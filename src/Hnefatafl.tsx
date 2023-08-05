@@ -682,6 +682,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
   const startGame = (selectedColor: Piece = playerColor(), mode: Mode = gameMode(), playSound: boolean = false) => {
     resetBoard();
     setMoveStack([]);
+    setHighlightedMove(new Move({ prevIndex: -1, newIndex: -1, id: -1, label: "", fenString: "" }));
     setGameMode(mode);
     setShowColorSelect(false);
     setPlayerColor(selectedColor);
@@ -726,7 +727,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
       />
       {!previewOnly && (
         <div class={styles.sidebar}>
-          {gameInProgress() && (
+          {(gameInProgress() || winner()) && (
             <>
               <MoveStack
                 moveStack={moveStack}
@@ -737,7 +738,11 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
                 updateBoard={updateBoard}
                 startingBoardFen={DEFAULT_BOARD_FEN}
               />
-              <div class={styles.Row}>{pieceIsWhite(colorToMove()) ? "White" : pieceIsBlack(colorToMove()) ? "Black" : "Any"} to Move</div>
+              {gameInProgress() && (
+                <div class={styles.Row}>
+                  {pieceIsWhite(colorToMove()) ? "White" : pieceIsBlack(colorToMove()) ? "Black" : "Any"} to Move
+                </div>
+              )}
             </>
           )}
           {!gameInProgress() && (

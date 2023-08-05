@@ -265,6 +265,15 @@ a {
   color: #b318f0;
 }
 
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
+
 .wrapper {
   display: flex;
   justify-content: space-around;
@@ -334,11 +343,28 @@ a {
   cursor: pointer;
 }
 
+.NonHighlightedMove {
+  border: 1px solid transparent;
+  transition: 0.2s;
+}
+
+.NonHighlightedMove:hover {
+  background-color: rgba(150, 150, 150, 0.5);
+  border: 1px solid rgba(150, 150, 150, 0.5);
+  border-radius: 2px;
+}
+
 .HighlightedMove {
   background-color: rgba(100, 100, 100, 0.75);
   border: 1px solid rgba(100, 100, 100, 0.75);
   border-radius: 2px;
-  width: fit-content;
+  transition: 0.2s;
+}
+
+.HighlightedMove:hover {
+  background-color: rgba(150, 150, 150, 0.8);
+  border: 1px solid rgba(150, 150, 150, 0.9);
+  border-radius: 2px;
 }
 
 @keyframes logo-spin {

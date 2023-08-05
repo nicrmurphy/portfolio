@@ -55,8 +55,8 @@ const MoveStack: Component<MoveStackProps> = ({
         {(move, i) => (
           <>
             {i() % 2 === 0 && <div class={styles.MoveStackItem}>{i() / 2 + 1}.</div>}
-            <div class={`${styles.MoveStackItem} ${styles.MoveStackMove}`} onClick={() => onMoveSelect(move)}>
-              <span class={move.id === highlightedMove().id ? styles.HighlightedMove : ""}>{move.label}</span>
+            <div class={`${styles.MoveStackItem} ${styles.MoveStackMove} ${styles.noselect}`} onClick={() => onMoveSelect(move)}>
+              <span class={move.id === highlightedMove().id ? styles.HighlightedMove : styles.NonHighlightedMove}>{move.label}</span>
             </div>
           </>
         )}

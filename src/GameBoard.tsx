@@ -372,10 +372,10 @@ const GameBoard: Component<GameBoardProps> = ({
                         height={`${TW}`}
                       />
                     )}
-                  {highlightedMove()?.prevIndex === getBoardIndexFromRankFile(y, x) && (
+                  {!previewOnly && highlightedMove()?.prevIndex === getBoardIndexFromRankFile(y, x) && (
                     <circle fill="goldenrod" opacity=".25" cx={`${TW * x + TW / 2}`} cy={`${TW * y + TW / 2}`} r={`${TW / 6}`} />
                   )}
-                  {highlightedMove()?.newIndex === getBoardIndexFromRankFile(y, x) && (
+                  {!previewOnly && highlightedMove()?.newIndex === getBoardIndexFromRankFile(y, x) && (
                     <rect fill="goldenrod" opacity=".25" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />
                   )}
                   {/* {props.highlightThreats && threatenedSquares()[getOppositeColor(colorToMove())][getBoardIndexFromRankFile(y, x)] && <rect fill="red" opacity=".5" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />} */}
