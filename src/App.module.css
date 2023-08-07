@@ -331,7 +331,7 @@ a {
   grid-template-columns: 0.1fr 0.45fr 0.45fr;
   background-color: rgba(0, 0, 0, 0.1);
   padding: 5px;
-  max-height: 20em;
+  max-height: 16em;
   overflow: auto;
   /* TODO: add custom scrollbar */
 }

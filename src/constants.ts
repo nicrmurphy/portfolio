@@ -77,3 +77,14 @@ export class Win {
 }
 
 export const ASCII_CHAR_A = 65; // ascii code for character 'A'
+
+export const getPieceType = (piece: Piece): Piece => piece & 7;
+export const getPieceColor = (piece: Piece): Piece => piece & 24;
+
+export const pieceIsWhite = (piece: Piece): boolean => !!(piece & Piece.White);
+export const pieceIsBlack = (piece: Piece): boolean => !!(piece & Piece.Black);
+
+export const getOppositeColor = (color: Piece): Piece.White | Piece.Black =>
+  getPieceColor(color) === Piece.White ? Piece.Black : Piece.White;
+
+export const isEnemy = (board: number[], i1: number, i2: number) => board[i2] && getPieceColor(board[i1]) !== getPieceColor(board[i2]);

@@ -24,7 +24,7 @@ export type GameBoardProps = {
   updateBoard: Function;
   board: Accessor<number[]>;
   pastBoardPosition: Accessor<boolean>;
-  isLegalMove: Function;
+  isLegalMove: (prevIndex: number, newIndex: number) => boolean;
   setGameInProgress: Function;
   movePiece: Function;
   boardTheme: BoardTheme;
@@ -33,7 +33,7 @@ export type GameBoardProps = {
   playerColor: Accessor<Piece>;
   gameMode: Accessor<Mode>;
   getNextComputerMove: () => Promise<{ prevIndex: number; newIndex: number }>;
-  legalMoves: Accessor<{ [key: number]: number[][] }>;
+  legalMoves: Accessor<number[][]>;
   winner: Accessor<Win | null>;
   gameInProgress: Accessor<boolean>;
   moveStack: Accessor<Move[]>;
@@ -187,7 +187,7 @@ const GameBoard: Component<GameBoardProps> = ({
   //#endregion piece util
 
   const highlightLegalMoves = (index: number): void => {
-    const moves = legalMoves()[colorToMove()][index];
+    const moves = legalMoves()[index];
     moves.forEach((index) =>
       setHighlightedSquares((squares) => {
         squares[index] = true;
@@ -251,6 +251,7 @@ const GameBoard: Component<GameBoardProps> = ({
 
       if (!winner() && gameInProgress() && gameMode() === Mode.Computer) {
         const move = await getNextComputerMove();
+        if (!isLegalMove(move.prevIndex, move.newIndex)) throw Error("Invalid computer move!");
         movePiece(move.prevIndex, move.newIndex);
       }
     } else updateBoard();

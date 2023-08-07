@@ -2,7 +2,20 @@ import { Component, createSignal } from "solid-js";
 import styles from "./App.module.css";
 import GameBoard from "./GameBoard";
 import MoveStack from "./MoveStack";
-import { ASCII_CHAR_A, Mode, Move, Piece, Win, WinCondition } from "./constants";
+import {
+  ASCII_CHAR_A,
+  Mode,
+  Move,
+  Piece,
+  Win,
+  WinCondition,
+  getOppositeColor,
+  getPieceColor,
+  getPieceType,
+  isEnemy,
+  pieceIsBlack,
+  pieceIsWhite,
+} from "./constants";
 import { GameServerConnection, GameState, MoveData } from "./services/api-service";
 import pieceMoveSFX from "./assets/sounds/piece-move.mp3";
 import pieceCaptureSFX from "./assets/sounds/piece-capture.mp3";
@@ -26,6 +39,14 @@ const NUM_BOARD_SQUARES = BW * BW;
 const ORTHOGONAL_OFFSETS = [-BW, -1, 1, BW];
 
 const DEFAULT_BOARD_FEN = "e3b5e8be16be4we4b2e3w3e3b3ew2kw2eb3e3w3e3b2e4we4be16be8b5_b";
+// const DEFAULT_BOARD_FEN = "e65be31bke9bw_b";
+// const DEFAULT_BOARD_FEN = "e79be4k_e";
+// const DEFAULT_BOARD_FEN = "ebk_e";
+// const DEFAULT_BOARD_FEN = "e3b5ke7be16be4we4b2e3w3e3b3ew2ew2eb3e3w3e3b2e4we4be16be8b5_e"
+// const DEFAULT_BOARD_FEN = "e5be6be7be28we5be3wkwe3be5be21be6be7be6b_e";
+
+// const DEFAULT_BOARD_FEN = "e5be6be7be17be16be2bekebe2be16be17be7be6b_e"; // KING vs. 12
+// const DEFAULT_BOARD_FEN = "e5be6be7be34be4ke4be34be7be6b_e"; // KING vs. 8
 
 const SELECTED_GAME_MODE = Mode.Local;
 // const SELECTED_GAME_MODE = Mode.Setup
@@ -75,24 +96,13 @@ const NUM_SQUARES_TO_EDGE: { [key: number]: number }[] = Array(NUM_BOARD_SQUARES
     };
   });
 
-const getPieceType = (piece: Piece): Piece => piece & 7;
-const getPieceColor = (piece: Piece): Piece => piece & 24;
-
-const pieceIsWhite = (piece: Piece): boolean => !!(piece & Piece.White);
-const pieceIsBlack = (piece: Piece): boolean => !!(piece & Piece.Black);
-
-const getOppositeColor = (color: Piece): Piece.White | Piece.Black => (getPieceColor(color) === Piece.White ? Piece.Black : Piece.White);
-
 const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({ BOARD_SIZE_PX, previewOnly }) => {
   // game logic (shared)
   const [board, setBoard] = createSignal<number[]>(Array(NUM_BOARD_SQUARES).fill(0));
   const [pastBoardPosition, setPastBoardPosition] = createSignal<boolean>(false);
   const [colorToMove, setColorToMove] = createSignal<Piece>(Piece.Any);
   const [playerColor, setPlayerColor] = createSignal<Piece>(Piece.Any);
-  const [legalMoves, setLegalMoves] = createSignal<{ [key: number]: number[][] }>({
-    [Piece.White]: Array(NUM_BOARD_SQUARES).fill([]),
-    [Piece.Black]: Array(NUM_BOARD_SQUARES).fill([]),
-  });
+  const [legalMoves, setLegalMoves] = createSignal<number[][]>(Array(NUM_BOARD_SQUARES).fill([]));
   const [winner, setWinner] = createSignal<Win | null>(null);
   const [moveStack, setMoveStack] = createSignal<Move[]>([]);
   const [kingLocation, setKingLocation] = createSignal<{ [key: number]: number }>({ [Piece.Black]: 4, [Piece.White]: 60 });
@@ -121,6 +131,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
   const [kingSquareFill, setKingSquareFill] = createSignal<string>("#ffffff");
 
   const [server, setServer] = createSignal<GameServerConnection>();
+  const [bot, setBot] = createSignal<Worker>();
 
   const [highlightedMove, setHighlightedMove] = createSignal<Move>(
     new Move({ prevIndex: -1, newIndex: -1, label: "", fenString: "", id: -1 }),
@@ -235,7 +246,10 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
 
     updateBoard(newBoard, true, fen);
 
-    if (gameMode() !== Mode.Setup) updateLegalMovesAndThreats();
+    if (gameMode() !== Mode.Setup) {
+      setColorToMove(Piece.Black);
+      updateLegalMovesAndThreats();
+    }
 
     // TODO: reset all variables
     setMoveStack([]);
@@ -259,14 +273,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
    * @param pieceType Optional; provide if available to avoid need to lookup
    * @returns
    */
-  const getLegalMovesAndThreatsForPiece = (
-    board: number[],
-    friendlyKingLocation: number,
-    enemyKingLocation: number,
-    index: number,
-    piece?: number,
-    pieceType?: Piece,
-  ): number[] => {
+  const getLegalMovesForPiece = (board: number[], index: number, piece?: number, pieceType?: Piece): number[] => {
     const thisPiece = piece ?? board[index];
     pieceType ||= getPieceType(thisPiece);
 
@@ -286,34 +293,28 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     return pieceType !== Piece.King ? legalMoves.filter((move) => !kingSquares()[move] && move !== throneIndex()) : legalMoves;
   };
 
-  const calculateLegalMoves = (
-    b: number[] = board(),
-    properties: { colorToMove: Piece; kingLocation: { [key: number]: number } },
-  ): { [key: number]: number[][] } => {
-    const { colorToMove, kingLocation } = properties;
-    const playerColor = colorToMove;
-    const enemyColor = getOppositeColor(playerColor);
-    const legalMovesOnBoard: { [key: number]: number[][] } = { [playerColor]: Array(64).fill([]), [enemyColor]: Array(64).fill([]) };
-    const piecesOnBoard: { [key: number]: number[][] } = { [playerColor]: [], [enemyColor]: [] };
+  const calculateLegalMoves = (b: number[] = board(), colorToMove: Piece): number[][] => {
+    const legalMovesOnBoard: number[][] = Array(64).fill([]);
+    const piecesOnBoard: number[][] = [];
     b.forEach((piece, index) => {
-      if (piece > 0) piecesOnBoard[getPieceColor(piece)].push([piece, index]);
+      if (piece & colorToMove) {
+        piecesOnBoard.push([piece, index]);
+      }
     });
 
-    const numMoves = piecesOnBoard[playerColor].reduce((total, [piece, index]) => {
+    piecesOnBoard.forEach(([piece, index]) => {
       const pieceType = getPieceType(piece);
-      const moves = getLegalMovesAndThreatsForPiece(b, kingLocation[playerColor], kingLocation[enemyColor], index, piece, pieceType);
-      legalMovesOnBoard[playerColor][index] = moves;
-      return (total += moves.length);
-    }, 0);
+      const moves = getLegalMovesForPiece(b, index, piece, pieceType);
+      legalMovesOnBoard[index] = moves;
+    });
 
     return legalMovesOnBoard;
   };
 
   const isLegalMove = (prevIndex: number, newIndex: number): boolean => {
-    return legalMoves()[colorToMove()][prevIndex].includes(newIndex);
+    return legalMoves()[prevIndex].includes(newIndex);
   };
 
-  const isEnemy = (board: number[], i1: number, i2: number) => board[i2] && getPieceColor(board[i1]) !== getPieceColor(board[i2]);
   const getNeighborEnemies = (board: number[], index: number) =>
     ORTHOGONAL_OFFSETS.filter((offset) => NUM_SQUARES_TO_EDGE[index][offset])
       .map((offset) => ({ offset, target: index + offset }))
@@ -361,7 +362,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     return capturedPieces;
   };
 
-  const checkWinConditions = (newBoard: number[], moves: { [key: number]: number[][] }, newFenString: string): Win | null => {
+  const checkWinConditions = (newBoard: number[], moves: number[][], newFenString: string): Win | null => {
     // is king captured?
     if (
       ORTHOGONAL_OFFSETS.every(
@@ -373,7 +374,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
       return new Win(Piece.Black, WinCondition.Capture);
 
     // no more legal moves
-    if (!moves[colorToMove()].filter((moves) => moves?.length).length) return new Win(getOppositeColor(colorToMove()), WinCondition.Moves);
+    if (!moves.filter((moves) => moves?.length).length) return new Win(getOppositeColor(colorToMove()), WinCondition.Moves);
 
     // check for perpetual moves loss
     if (boardPositions()[newFenString] > 2) return new Win(Piece.Black, WinCondition.Perpetual);
@@ -495,7 +496,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
       const capturedPieces = checkCaptures(newBoard, newIndex);
       capturedPieces.forEach(({ target }) => (newBoard[target] = Piece.None));
 
-      const moves = calculateLegalMoves(newBoard, { colorToMove: colorToMove(), kingLocation: kingLocation() });
+      const moves = calculateLegalMoves(newBoard, colorToMove());
 
       // add move to move stack and board position history
       fenString = calculateFenString(newBoard, colorToMove());
@@ -523,6 +524,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
         setWinner(win);
         setColorToMove(Piece.None);
         setGameInProgress(false);
+        bot()?.terminate();
+        setBot(undefined);
         new Audio(gameStartSFX).play();
       } else setLegalMoves(moves);
 
@@ -549,13 +552,13 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
 
   const makeRandomMove = () => {
     const availableMoves: number[] = [];
-    const numMoves = legalMoves()[colorToMove()].reduce((nMoves, move, index) => {
+    const numMoves = legalMoves().reduce((nMoves, move, index) => {
       if (move.length) availableMoves.push(index);
       return nMoves + (move?.length ?? 0);
     }, 0);
     if (numMoves) {
       const randomPreviousIndex = availableMoves[getRandomInt(availableMoves.length)];
-      const availableSquares = legalMoves()[colorToMove()][randomPreviousIndex];
+      const availableSquares = legalMoves()[randomPreviousIndex];
       const randomNewIndex = availableSquares[getRandomInt(availableSquares.length)];
 
       movePiece(randomPreviousIndex, randomNewIndex, board()[randomPreviousIndex], false);
@@ -563,7 +566,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
   };
 
   const updateLegalMovesAndThreats = () => {
-    const moves = calculateLegalMoves(board(), { colorToMove: colorToMove(), kingLocation: kingLocation() });
+    const moves = calculateLegalMoves(board(), colorToMove());
     setLegalMoves(moves);
 
     if (previewOnly) {
@@ -602,23 +605,55 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
       setWinner(new Win(getOppositeColor(colorToMove()), WinCondition.Resign));
       setColorToMove(Piece.None);
       setGameInProgress(false);
+      bot()?.terminate();
+      setBot(undefined);
       new Audio(gameStartSFX).play();
     }
   };
 
+  const callWorker = async (board: number[], colorToMove: Piece): Promise<{ prevIndex: number; newIndex: number; evaluation: number }> => {
+    return new Promise((resolve, reject) => {
+      if (typeof Worker !== "undefined") {
+        if (!bot()) {
+          setBot(new Worker(new URL("./bots/bot.worker", import.meta.url)));
+        }
+        bot()!.onmessage = ({ data }) => {
+          const { type, payload } = JSON.parse(data);
+          if (type === "move")
+            resolve({
+              prevIndex: payload.prevIndex as number,
+              newIndex: payload.newIndex as number,
+              evaluation: payload.evaluation as number,
+            });
+        };
+        bot()!.postMessage(JSON.stringify({ board, colorToMove, kingIndex: getKingLocation() }));
+      } else reject("Web worker failed to start!");
+    });
+  };
+
   const getNextComputerMove = async (): Promise<{ prevIndex: number; newIndex: number }> => {
+    console.time("nextMove");
+    const { prevIndex, newIndex, evaluation } = await callWorker(board(), colorToMove());
+    console.timeEnd("nextMove");
     // evaluate position
+    // const perspective = colorToMove() & Piece.White ? 1 : -1;
+    // const currentBoardEval = await evaluatePosition(board()) * perspective
 
     // find best move
+    // const { evaluation, prevIndex, newIndex } = await search(board(), colorToMove(), SEARCH_DEPTH, -Infinity, Infinity);
+    console.log("evaluation:", evaluation / 1000);
+
+    if (prevIndex !== undefined && newIndex !== undefined) return { prevIndex, newIndex };
+    console.log("making random move");
 
     // choose random move
     const availableMoves: number[] = [];
-    legalMoves()[colorToMove()].forEach((move, index) => {
+    legalMoves().forEach((move, index) => {
       if (move.length) availableMoves.push(index);
     });
 
     const randomPreviousIndex = availableMoves[getRandomInt(availableMoves.length)];
-    const availableSquares = legalMoves()[colorToMove()][randomPreviousIndex];
+    const availableSquares = legalMoves()[randomPreviousIndex];
     const randomNewIndex = availableSquares[getRandomInt(availableSquares.length)];
     return { prevIndex: randomPreviousIndex, newIndex: randomNewIndex };
   };
@@ -708,7 +743,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     setPastBoardPosition(false);
     if (playSound) new Audio(gameStartSFX).play();
 
-    if (mode === Mode.Computer && playerColor() !== colorToMove()) makeRandomMove();
+    if (mode === Mode.Computer && playerColor() !== colorToMove()) setTimeout(makeRandomMove, 1000);
   };
 
   return (
