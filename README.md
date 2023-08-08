@@ -1,4 +1,5 @@
 ## Chess
+
 SVG Chess Pieces: https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces
 
 ## Usage
@@ -36,46 +37,49 @@ Your app is ready to be deployed!
 
 You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
 
-
 ## Hnefatafl TODO
+
 ### Features
+
 - Ability to Offer/Accept Draw
 - Online Multiplayer
 - Play Against Bot
 - Testing Suite for legal moves
+
 ### Bugs
+
 - Wrong cursor on preview
 - Clicking Preview doesn't always open game
 
-# Piece Binaries 
+# Piece Binaries
 
-00000    0
-00001    1   King
-00010    2   Pawn
-00011    3   Knight
-00100    4   Bishop
-00101    5   Rook
-00110    6   Queen
-00111    7   * PIECE TYPE MASK
+00000 0
+00001 1 King
+00010 2 Pawn
+00011 3 Knight
+00100 4 Bishop
+00101 5 Rook
+00110 6 Queen
+00111 7 \* PIECE TYPE MASK
 
-01000    8   * WHITE MASK
-01001    9   White King
-01010   10   White Pawn
-01011   11   White Knight
-01100   12   White Bishop
-01101   13   White Rook
-01110   14   White Queen
-01111   15   * ALL WHITE PIECES MASK
+01000 8 _ WHITE MASK
+01001 9 White King
+01010 10 White Pawn
+01011 11 White Knight
+01100 12 White Bishop
+01101 13 White Rook
+01110 14 White Queen
+01111 15 _ ALL WHITE PIECES MASK
 
-10000   16   * BLACK MASK
-10001   17   Black King
-10010   18   Black Pawn
-10011   19   Black Knight
-10100   20   Black Bishop
-10101   21   Black Rook
-10110   22   Black Queen
-10111   23   * ALL BLACK PIECES MASK
-11000   24   * PIECE COLOR MASK
+10000 16 _ BLACK MASK
+10001 17 Black King
+10010 18 Black Pawn
+10011 19 Black Knight
+10100 20 Black Bishop
+10101 21 Black Rook
+10110 22 Black Queen
+10111 23 _ ALL BLACK PIECES MASK
+11000 24 \* PIECE COLOR MASK
 
 # Chessboard
 
