@@ -772,6 +772,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
         highlightedMove={highlightedMove}
         setHighlightedMove={setHighlightedMove}
         useAltRookSvg={true}
+        showBoardSquareLabels={true}
         boardTheme={{
           backgroundFill: darkSquareFill(),
           textureFill: lightSquareFill(),

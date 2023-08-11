@@ -117,6 +117,7 @@ const Chess: Component<{
   const [winner, setWinner] = createSignal<Win | null>(null);
   const [gameInProgress, setGameInProgress] = createSignal<boolean>(false);
   // game logic (special)
+  const legalMovesForColorToMove = () => legalMoves()[colorToMove()];
   const [checkmate, setCheckmate] = createSignal<boolean>(cache.checkmate ?? false);
   const [inCheck, setInCheck] = createSignal<boolean>(cache.inCheck ?? false);
   const [displayPromotionDialog, setDisplayPromotionDialog] = createSignal<boolean>(cache.displayPromotionDialog ?? false);
@@ -737,14 +738,20 @@ const Chess: Component<{
         colorToMove={colorToMove}
         playerColor={colorToMove} // TODO: ❎ DO NOT FORGET TO CHANGE THIS OR YOU WILL HATE YOURSELF LATER❗❗❗
         gameMode={gameMode}
-        legalMoves={legalMoves}
+        legalMoves={legalMovesForColorToMove}
         isLegalMove={isLegalMove}
         winner={winner}
         gameInProgress={gameInProgress}
+        getNextComputerMove={async () => {
+          return new Promise((resolve, reject) => {
+            resolve({ prevIndex: -1, newIndex: -1 });
+          });
+        }}
         moveStack={moveStack}
         setGameInProgress={setGameInProgress}
         movePiece={movePiece}
         useAltRookSvg={false}
+        showBoardSquareLabels={false}
         highlightedMove={highlightedMove}
         setHighlightedMove={setHighlightedMove}
         boardTheme={{

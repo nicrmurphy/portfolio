@@ -309,6 +309,11 @@ a {
   /* max-height: 500px; */
 }
 
+.BoardSquareLabel {
+  fill: rgba(150, 150, 150, 0.5);
+  font: 8px sans-serif;
+}
+
 .Default {
   cursor: default;
 }

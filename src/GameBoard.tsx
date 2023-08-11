@@ -29,11 +29,12 @@ export type GameBoardProps = {
   movePiece: Function;
   boardTheme: BoardTheme;
   useAltRookSvg: boolean;
+  showBoardSquareLabels: boolean;
   colorToMove: Accessor<Piece>;
   playerColor: Accessor<Piece>;
   gameMode: Accessor<Mode>;
   getNextComputerMove: () => Promise<{ prevIndex: number; newIndex: number }>;
-  legalMoves: Accessor<number[][]>;
+  legalMoves: Accessor<number[][]> | (() => number[][]);
   winner: Accessor<Win | null>;
   gameInProgress: Accessor<boolean>;
   moveStack: Accessor<Move[]>;
@@ -56,6 +57,7 @@ const GameBoard: Component<GameBoardProps> = ({
   movePiece,
   boardTheme,
   useAltRookSvg,
+  showBoardSquareLabels,
   colorToMove,
   playerColor,
   gameMode,
@@ -388,6 +390,20 @@ const GameBoard: Component<GameBoardProps> = ({
                   )}
                   {/* {props.highlightThreats && threatenedSquares()[getOppositeColor(colorToMove())][getBoardIndexFromRankFile(y, x)] && <rect fill="red" opacity=".5" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />} */}
                   {/* {highlightedLinesOfCheckSquares()[getBoardIndexFromRankFile(y, x)] && <rect fill="yellow" opacity=".5" x={`${TW * x}`} y={`${TW * y}`} width={`${TW}`} height={`${TW}`} />} */}
+                  {showBoardSquareLabels && (
+                    <>
+                      {!x && (
+                        <text x={x * TW + 3} y={y * TW + 10} class={styles.BoardSquareLabel}>
+                          {BW - y}
+                        </text>
+                      )}
+                      {y === BW - 1 && (
+                        <text x={x * TW + (TW - 8)} y={y * TW + (TW - 4)} class={styles.BoardSquareLabel}>
+                          {String.fromCharCode(ASCII_CHAR_A + x)}
+                        </text>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </For>
