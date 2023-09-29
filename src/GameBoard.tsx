@@ -393,12 +393,12 @@ const GameBoard: Component<GameBoardProps> = ({
                   {showBoardSquareLabels && (
                     <>
                       {!x && (
-                        <text x={x * TW + 3} y={y * TW + 10} class={styles.BoardSquareLabel}>
+                        <text x={x * TW + 3} y={y * TW + 10} class={`${styles.BoardSquareLabel} ${styles.noselect}`}>
                           {BW - y}
                         </text>
                       )}
                       {y === BW - 1 && (
-                        <text x={x * TW + (TW - 8)} y={y * TW + (TW - 4)} class={styles.BoardSquareLabel}>
+                        <text x={x * TW + (TW - 8)} y={y * TW + (TW - 4)} class={`${styles.BoardSquareLabel} ${styles.noselect}`}>
                           {String.fromCharCode(ASCII_CHAR_A + x)}
                         </text>
                       )}

@@ -23,7 +23,7 @@ render(
         <Route path="/hnefatafl" component={PlayHnefatafl} />
         {/* <Route path="/royalur" component={PlayRoyalUr} />
       <Route path="/*ur" element={<Navigate href={"/royalur"}/>} /> */}
-        <Route path="/*" element={<Navigate href={"/"} />} />
+        {/* <Route path="/*" element={<Navigate href={"/"} />} /> */}
       </Routes>
     </Router>
   ),
