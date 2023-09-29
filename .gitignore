@@ -2,3 +2,10 @@ node_modules
 dist
 *.env
 *.cpuprofile
+
+# wasm
+src/bots/*wasm
+src/bots/bot.html
+src/bots/bot.js
+src/bots/functions.html
+src/bots/functions.js
