@@ -631,7 +631,83 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     });
   };
 
+  async function instantiate(bytes: any, imports: any) {
+    return WebAssembly.compile(bytes).then((m) => new WebAssembly.Instance(m, imports));
+  }
+
+  let wasmExports: any = null;
+
+  let wasmMemory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
+
+  let wasmTable = new WebAssembly.Table({
+    initial: 1,
+    maximum: 1,
+    element: "anyfunc",
+  });
+
+  let asmLibraryArg = {
+    __handle_stack_overflow: () => {},
+    emscripten_resize_heap: () => {},
+    __lock: () => {},
+    __unlock: () => {},
+    memory: wasmMemory,
+    table: wasmTable,
+  };
+
+  let info = {
+    env: asmLibraryArg,
+    wasi_snapshot_preview1: asmLibraryArg,
+  };
+
+  async function loadWasm() {
+    let response = await fetch("functions.wasm");
+    let bytes = await response.arrayBuffer();
+    let wasmObj = await WebAssembly.instantiate(bytes, info);
+    return wasmObj.instance.exports;
+  }
+
+  type MyType = {
+    add: Function;
+  };
+
   const getNextComputerMove = async (): Promise<{ prevIndex: number; newIndex: number }> => {
+    const worker = new Worker("wasm_worker.js");
+
+    const module = await WebAssembly.compileStreaming(fetch("bot.wasm"));
+    worker.onmessage = ({ data }) => {
+      const { type, payload } = JSON.parse(data);
+      if (type === "move")
+        console.log({
+          prevIndex: payload.prevIndex as number,
+          newIndex: payload.newIndex as number,
+          evaluation: payload.evaluation as number,
+        });
+    };
+    worker.postMessage(module);
+
+    // const worker = new Worker(new URL("./bots/bot.js", import.meta.url))
+    // console.log(worker)
+
+    // let exports = await loadWasm()
+    // console.log((exports as MyType).add(1, 4))
+    // const importObject = { imports: { get_best_move: (arg:any) => console.log(arg) } };
+
+    // const asm = await fetch('bot.wasm', {
+    //   headers: new Headers({'content-type': 'application/wasm'}),
+    // })
+    // console.log(asm)
+    // const obj = await WebAssembly.instantiateStreaming(asm, importObject)
+    // console.log(obj.instance.exports);
+
+    // let importObject = { imports: { i: (arg: any) => console.log(arg) } }
+    // const response = await fetch('bot.wasm')
+    // const bytes = await response.arrayBuffer()
+    // const m = await WebAssembly.compile(bytes)
+    // const instance = new WebAssembly.Instance(m, importObject)
+    // console.log(m, instance)
+    // console.log(instance)
+    // instance.exports.e()
+
     console.time("nextMove");
     const { prevIndex, newIndex, evaluation } = await callWorker(board(), colorToMove());
     console.timeEnd("nextMove");

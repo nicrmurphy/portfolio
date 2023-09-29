@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": ["${workspaceFolder}/**"],
+      "defines": ["_DEBUG", "UNICODE", "_UNICODE"],
+      "windowsSdkVersion": "10.0.19041.0",
+      "compilerPath": "cl.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-msvc-x64"
+    },
+    {
+      "name": "Emscripten",
+      "includePath": ["${workspaceFolder}/**", "${workspaceFolder}/../emsdk/upstream/emscripten/system/include"],
+      "defines": ["_DEBUG", "UNICODE", "_UNICODE"],
+      "windowsSdkVersion": "10.0.19041.0",
+      "compilerPath": "${workspaceFolder}/../emsdk/upstream/emscripten/emcc",
+      "cStandard": "c11",
+      "cppStandard": "c++17"
+    }
+  ],
+  "version": 4
+}
