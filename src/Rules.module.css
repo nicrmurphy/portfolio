@@ -1,0 +1,47 @@
+.Container {
+  display: flex;
+}
+
+.RuleContainer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 3em;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 2em;
+  background-color: rgba(0, 0, 0, 0.2);
+  max-width: 80vw;
+  color: white;
+}
+
+.RuleContainer:nth-child(odd) {
+  flex-direction: row-reverse;
+}
+
+.RuleText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50%;
+}
+
+.RuleTitle {
+  display: flex;
+  font-size: 4rem;
+  width: 100%;
+  justify-content: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid white;
+}
+
+.RuleBody {
+  display: flex;
+  font-size: 1.5rem;
+  white-space: pre-wrap;
+}
+
+.BoardContainer {
+  padding: 1em;
+  background-color: rgba(0, 0, 0, 0.1);
+}

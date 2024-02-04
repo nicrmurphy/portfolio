@@ -21,6 +21,7 @@ import pieceMoveSFX from "./assets/sounds/piece-move.mp3";
 import pieceCaptureSFX from "./assets/sounds/piece-capture.mp3";
 import gameStartSFX from "./assets/sounds/game-start.mp3";
 import { getRandomInt } from "./utility";
+import { A } from "@solidjs/router";
 
 /**
  * Short for "Board Width", this value represents the number of tiles/squares in a single
@@ -39,8 +40,8 @@ const NUM_BOARD_SQUARES = BW * BW;
 const ORTHOGONAL_OFFSETS = [-BW, -1, 1, BW];
 
 const DEFAULT_BOARD_FEN = "e3b5e8be16be4we4b2e3w3e3b3ew2kw2eb3e3w3e3b2e4we4be16be8b5_b";
-// const DEFAULT_BOARD_FEN = "e65be31bke9bw_b";
-// const DEFAULT_BOARD_FEN = "e79be4k_e";
+// const DEFAULT_BOARD_FEN = "e65be31bke9bw_b"; /* shieldwall */
+// const DEFAULT_BOARD_FEN = "e79be4k_e"; /* out of moves */
 // const DEFAULT_BOARD_FEN = "ebk_e";
 // const DEFAULT_BOARD_FEN = "e3b5ke7be16be4we4b2e3w3e3b3ew2ew2eb3e3w3e3b2e4we4be16be8b5_e"
 // const DEFAULT_BOARD_FEN = "e5be6be7be28we5be3wkwe3be5be21be6be7be6b_e";
@@ -96,7 +97,21 @@ const NUM_SQUARES_TO_EDGE: { [key: number]: number }[] = Array(NUM_BOARD_SQUARES
     };
   });
 
-const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({ BOARD_SIZE_PX, previewOnly }) => {
+const Hnefatafl: Component<{
+  BOARD_SIZE_PX: number;
+  previewOnly?: boolean;
+  hideSidePanel?: boolean;
+  hideFooter?: boolean;
+  initialColorToMove?: Piece;
+  initialFen?: string;
+}> = ({
+  BOARD_SIZE_PX,
+  previewOnly = false,
+  hideSidePanel = false,
+  hideFooter = true,
+  initialColorToMove = Piece.Black,
+  initialFen = DEFAULT_BOARD_FEN,
+}) => {
   // game logic (shared)
   const [board, setBoard] = createSignal<number[]>(Array(NUM_BOARD_SQUARES).fill(0));
   const [pastBoardPosition, setPastBoardPosition] = createSignal<boolean>(false);
@@ -192,6 +207,10 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     return `${fen}_${getColorEncoding(colorToMove)}`;
   };
 
+  const getColorToMoveLabel = (): string => {
+    return pieceIsWhite(colorToMove()) ? "White" : pieceIsBlack(playerColor()) ? "Black" : "Any";
+  };
+
   const updateBoard = (newBoard: number[] = board(), updateFen: boolean = false, fenString: string = "", color: Piece = colorToMove()) => {
     setBoard(Array(NUM_BOARD_SQUARES).fill(0)); // temporary solution to force board to rerender
     setBoard(newBoard);
@@ -247,7 +266,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     updateBoard(newBoard, true, fen);
 
     if (gameMode() !== Mode.Setup) {
-      setColorToMove(Piece.Black);
+      setColorToMove(initialColorToMove);
       updateLegalMovesAndThreats();
     }
 
@@ -546,7 +565,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
   };
 
   const resetBoard = () => {
-    importGameFromFen(DEFAULT_BOARD_FEN);
+    importGameFromFen(initialFen);
     if (gameMode() === Mode.Setup) setColorToMove(Piece.Any);
   };
 
@@ -737,7 +756,7 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
     setGameMode(mode);
     setShowColorSelect(false);
     setPlayerColor(selectedColor);
-    setColorToMove(Piece.Black);
+    setColorToMove(initialColorToMove);
     setWinner(null);
     setGameInProgress(true);
     setPastBoardPosition(false);
@@ -781,7 +800,8 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
           checkerPatternOpacity: 0,
         }}
       />
-      {!previewOnly && (
+      {/* Side Panel */}
+      {!previewOnly && !hideSidePanel && (
         <div class={styles.sidebar}>
           {(gameInProgress() || winner()) && (
             <>
@@ -792,20 +812,14 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
                 setPastBoardPosition={setPastBoardPosition}
                 getBoardFromFen={getBoardFromFen}
                 updateBoard={updateBoard}
-                startingBoardFen={DEFAULT_BOARD_FEN}
+                startingBoardFen={initialFen}
               />
-              {gameInProgress() && (
-                <div class={styles.Row}>
-                  {pieceIsWhite(colorToMove()) ? "White" : pieceIsBlack(colorToMove()) ? "Black" : "Any"} to Move
-                </div>
-              )}
+              {gameInProgress() && <div class={styles.Row}>{getColorToMoveLabel()} to Move</div>}
             </>
           )}
           {!gameInProgress() && (
             <>
-              <div class={styles.Row}>
-                {winner() ? `${winner()?.winner === Piece.White ? "Defenders" : "Attackers"} win via ${winner()?.condition}!` : ""}
-              </div>
+              <div class={styles.Row}>{winner()?.winnerText}</div>
               {gameMode() === Mode.Online ? (
                 <>
                   {!winner() && (
@@ -857,6 +871,11 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
           )}
           <div class={styles.Row}>
             <button onClick={() => navigator.clipboard.writeText(fenString())}>Copy Board Position to Clipboard</button>
+            <button>
+              <A href="/hnefatafl/rules" target="_blank">
+                How to Play
+              </A>
+            </button>
           </div>
           {gameMode() === Mode.Setup && (
             <>
@@ -875,6 +894,20 @@ const Hnefatafl: Component<{ BOARD_SIZE_PX: number; previewOnly: boolean }> = ({
               </div>
             </>
           )}
+        </div>
+      )}
+      {/* Footer */}
+      {!previewOnly && !hideFooter && (
+        <div class={styles.footer}>
+          <div>{!winner() ? `${getColorToMoveLabel()} to Move` : `${winner()!.winnerText}`}</div>
+          <button
+            onClick={() => {
+              resign();
+              startGame();
+            }}
+          >
+            Reset Board
+          </button>
         </div>
       )}
     </>

@@ -8,7 +8,7 @@ describe("App", () => {
     expect(getByText("Chess"));
   });
 
-  const EXIT_FORD_TESTING_FEN = "e3b5e8be16be4we4b2e3w3e3b3e7b3e9b2e4w2e3be4we2we6wewe2we7ke2w_w";
+  const EXIT_FORT_TESTING_FEN = "e3b5e8be16be4we4b2e3w3e3b3e7b3e9b2e4w2e3be4we2we6wewe2we7ke2w_w";
   const SHIELD_WALL_TESTING_FEN = "e3b5e8be7we8bwe8b2we3w2e3b2we3kw2eb3we4we3b2we6be2we15be7b6_w";
   const SHIELD_WALL_TESTING2_FEN = "e3b5e8be7we8bwe8b2we3w2e3b2we3kw2eb3we8b2we9bwe9bwe3be8b5_w";
   const SHIELD_WALL_TESTING3_FEN = "e5b3e3wbe9kbe9wbe8bwbe3w2e3be2be3w2eb2wbe3w2e3bwbe8bwbe9be4be8b5_b";

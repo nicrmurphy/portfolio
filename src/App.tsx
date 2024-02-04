@@ -2,7 +2,6 @@ import { Component, For, JSX, createSignal } from "solid-js";
 
 import styles from "./App.module.css";
 import Chess from "./Chess";
-import { A } from "@solidjs/router";
 import Hnefatafl from "./Hnefatafl";
 
 import fonts from "./Fonts.module.css";
@@ -61,7 +60,7 @@ const App: Component = () => {
             onMouseOver={() => onHover("hnefatafl")}
             onMouseLeave={() => setHoverLabel(null)}
           >
-            <Hnefatafl BOARD_SIZE_PX={1200} previewOnly={true} />
+            <Hnefatafl BOARD_SIZE_PX={1200} previewOnly={true} hideSidePanel={true} />
             <div class={`${styles.GameLabel} ${hoverLabel() === "hnefatafl" ? styles.HoverGameLabel : ""}`}>Hnefatafl</div>
           </div>
           {/* <div class={styles.GamePreview} onClick={() => onClick('/royalur')} onMouseOver={() => onHover('royalur')} onMouseLeave={() => setHoverLabel(null)}>

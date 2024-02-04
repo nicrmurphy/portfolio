@@ -59,7 +59,7 @@ export enum WinCondition {
   Capture = "King Capture",
   Moves = "No Legal Moves",
   Surround = "Surrounding All Defenders",
-  Perpetual = "Repeating Board Position Three Times",
+  Perpetual = "Triple Board Repetition",
   Resign = "Resignation",
   Draw = "Draw",
 }
@@ -73,6 +73,10 @@ export class Win {
   constructor(winner: Winner, condition: WinCondition) {
     this.winner = winner;
     this.condition = condition;
+  }
+
+  get winnerText() {
+    return `${this.winner === Piece.White ? "Defenders" : "Attackers"} win via ${this.condition}!`;
   }
 }
 

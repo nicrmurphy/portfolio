@@ -252,6 +252,18 @@ a {
   row-gap: 0.5em;
 }
 
+.footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  flex-grow: 1;
+  padding: 1em;
+  padding-bottom: 0;
+  font-size: 1rem;
+
+  overflow-wrap: anywhere;
+}
+
 .Row {
   display: flex;
   flex-direction: row;

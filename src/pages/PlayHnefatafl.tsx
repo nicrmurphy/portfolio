@@ -6,7 +6,7 @@ function PlayHnefatafl() {
   return (
     <div class={`${styles.App} ${styles.Background} ${styles.SlideInBottom}`}>
       <div class={`${styles.Foreground} ${styles.PlayGame}`}>
-        <Hnefatafl BOARD_SIZE_PX={800} previewOnly={false} />
+        <Hnefatafl BOARD_SIZE_PX={800} />
       </div>
       <BackgroundCircles />
     </div>
