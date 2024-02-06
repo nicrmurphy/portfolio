@@ -1,0 +1,23 @@
+{
+  "name": "Nicrmurphy.com",
+  "short_name": "Nicrmurphy.com",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#3f4f73",
+  "theme_color": "#3f4f73",
+  "description": "Games, tools, and other oddities to enjoy.  Play Hnefatafl online!",
+  "categories": ["education", "entertainment", "finance", "games", "productivity", "social", "utilities"],
+  "icons": [],
+  "shortcuts": [
+    {
+      "name": "Play Hnefatafl Online",
+      "url": "/hnefatafl",
+      "description": "Play Hnefatafl (Viking Chess) online against a friend or the computer!"
+    },
+    {
+      "name": "Hnefatafl - How to Play Interactive Tutorial",
+      "url": "/hnefatafl/rules",
+      "description": "Learn to play Hnefatafl (Viking Chess) online using this interactive guide."
+    }
+  ]
+}
