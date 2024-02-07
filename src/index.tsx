@@ -2,12 +2,12 @@
 import { render } from "solid-js/web";
 
 import "./index.css";
-import App from "./App";
+import App from "./pages/App";
 import { Navigate, Route, Router, Routes } from "@solidjs/router";
 import PlayChess from "./pages/PlayChess";
 import PlayHnefatafl from "./pages/PlayHnefatafl";
 import PlayRoyalUr from "./pages/PlayRoyalUr";
-import HnefataflRules from "./HnefataflRules";
+import HnefataflRules from "./pages/HnefataflRules";
 
 const root = document.getElementById("root");
 

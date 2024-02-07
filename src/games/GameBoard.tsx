@@ -1,8 +1,8 @@
 import { Accessor, Component, For, JSX, Ref, Setter, createSignal } from "solid-js";
 import { ASCII_CHAR_A, Mode, Move, Piece, Win } from "./constants";
-import { Wood as SvgWoodTexture } from "./svg/Textures";
-import svgPieces, { TW } from "./svg/Pieces";
-import styles from "./App.module.css";
+import { Wood as SvgWoodTexture } from "../svg/Textures";
+import svgPieces, { TW } from "../svg/Pieces";
+import styles from "../App.module.css";
 
 type MousePosition = {
   x: number;

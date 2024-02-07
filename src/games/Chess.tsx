@@ -1,5 +1,5 @@
 import { Component, createEffect, createSignal, on } from "solid-js";
-import styles from "./App.module.css";
+import styles from "../App.module.css";
 import GameBoard from "./GameBoard";
 import { Mode, MousePosition, Move, Piece, Win } from "./constants";
 

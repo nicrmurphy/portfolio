@@ -1,5 +1,5 @@
 import styles from "../App.module.css";
-import Hnefatafl from "../Hnefatafl";
+import Hnefatafl from "../games/Hnefatafl";
 import { BackgroundCircles } from "../BackgroundCircles";
 
 function PlayHnefatafl() {

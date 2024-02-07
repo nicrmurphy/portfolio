@@ -1,13 +1,13 @@
 import { Component, For, JSX, createSignal } from "solid-js";
 
-import styles from "./App.module.css";
-import Chess from "./Chess";
-import Hnefatafl from "./Hnefatafl";
+import styles from "../App.module.css";
+import Chess from "../games/Chess";
+import Hnefatafl from "../games/Hnefatafl";
 
-import fonts from "./Fonts.module.css";
-import { isTouchEnabled } from "./utility";
-import { BackgroundCircles } from "./BackgroundCircles";
-import RoyalUr from "./RoyalUr";
+import fonts from "../Fonts.module.css";
+import { isTouchEnabled } from "../utility";
+import { BackgroundCircles } from "../BackgroundCircles";
+import RoyalUr from "../games/RoyalUr";
 
 const Header: Component<{ content: string }> = (props) => {
   return (

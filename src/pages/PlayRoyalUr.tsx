@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 
 import styles from "../App.module.css";
 import { BackgroundCircles } from "../BackgroundCircles";
-import RoyalUr from "../RoyalUr";
+import RoyalUr from "../games/RoyalUr";
 
 function PlayRoyalUr() {
   const [highlightMoves, setHighlightMoves] = createSignal<boolean>(true);

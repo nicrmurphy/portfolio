@@ -1,7 +1,7 @@
 import { Component, For, JSX, createSignal } from "solid-js";
 
 import styles from "../App.module.css";
-import Chess from "../Chess";
+import Chess from "../games/Chess";
 import { BackgroundCircles } from "../BackgroundCircles";
 
 function PlayChess() {

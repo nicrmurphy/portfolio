@@ -1,6 +1,6 @@
 import { Component, For, JSXElement } from "solid-js";
-import Hnefatafl from "./Hnefatafl";
-import { Piece } from "./constants";
+import Hnefatafl from "../games/Hnefatafl";
+import { Piece } from "../games/constants";
 import styles from "./Rules.module.css";
 
 const ruleData: {

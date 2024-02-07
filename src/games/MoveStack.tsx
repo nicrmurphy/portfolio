@@ -1,8 +1,8 @@
 import { Accessor, Component, For, Setter, onMount, onCleanup, Ref } from "solid-js";
-import styles from "./App.module.css";
+import styles from "../App.module.css";
 import { Move, Piece } from "./constants";
-import pieceMoveSFX from "./assets/sounds/piece-move.mp3";
-import pieceCaptureSFX from "./assets/sounds/piece-capture.mp3";
+import pieceMoveSFX from "../assets/sounds/piece-move.mp3";
+import pieceCaptureSFX from "../assets/sounds/piece-capture.mp3";
 
 type MoveStackProps = {
   moveStack: Accessor<Move[]>;

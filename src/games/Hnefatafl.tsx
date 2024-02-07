@@ -1,5 +1,5 @@
 import { Component, createSignal } from "solid-js";
-import styles from "./App.module.css";
+import styles from "../App.module.css";
 import GameBoard from "./GameBoard";
 import MoveStack from "./MoveStack";
 import {
@@ -16,11 +16,11 @@ import {
   pieceIsBlack,
   pieceIsWhite,
 } from "./constants";
-import { GameServerConnection, GameState, MoveData } from "./services/api-service";
-import pieceMoveSFX from "./assets/sounds/piece-move.mp3";
-import pieceCaptureSFX from "./assets/sounds/piece-capture.mp3";
-import gameStartSFX from "./assets/sounds/game-start.mp3";
-import { getRandomInt } from "./utility";
+import { GameServerConnection, GameState, MoveData } from "../services/api-service";
+import pieceMoveSFX from "../assets/sounds/piece-move.mp3";
+import pieceCaptureSFX from "../assets/sounds/piece-capture.mp3";
+import gameStartSFX from "../assets/sounds/game-start.mp3";
+import { getRandomInt } from "../utility";
 import { A } from "@solidjs/router";
 
 /**
