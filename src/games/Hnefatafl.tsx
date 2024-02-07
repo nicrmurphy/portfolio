@@ -634,7 +634,7 @@ const Hnefatafl: Component<{
     return new Promise((resolve, reject) => {
       if (typeof Worker !== "undefined") {
         if (!bot()) {
-          setBot(new Worker(new URL("./bots/bot.worker", import.meta.url)));
+          setBot(new Worker(new URL("../bots/bot.worker", import.meta.url)));
         }
         bot()!.onmessage = ({ data }) => {
           const { type, payload } = JSON.parse(data);
