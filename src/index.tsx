@@ -8,6 +8,7 @@ import PlayChess from "./pages/PlayChess";
 import PlayHnefatafl from "./pages/PlayHnefatafl";
 import PlayRoyalUr from "./pages/PlayRoyalUr";
 import HnefataflRules from "./pages/HnefataflRules";
+import DepositAllocation from "./pages/DepositAllocation";
 
 const root = document.getElementById("root");
 
@@ -26,6 +27,7 @@ render(
         {/* <Route path="/royalur" component={PlayRoyalUr} />
       <Route path="/*ur" element={<Navigate href={"/royalur"}/>} /> */}
         {/* <Route path="/*" element={<Navigate href={"/"} />} /> */}
+        <Route path="/deposit" component={DepositAllocation} />
       </Routes>
     </Router>
   ),
